@@ -131,7 +131,7 @@ export default function DevicesPage() {
               <CardContent className="space-y-3 p-4">
                 <div>
                   <div className="font-semibold leading-tight">{d.name}</div>
-                  <div className="text-xs text-muted-foreground">SKU {d.sku} · ${Number(d.unit_price).toFixed(2)}</div>
+                  <div className="text-xs text-muted-foreground">SKU {d.sku}</div>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-center">
                   <div className="rounded-xl bg-secondary p-2">
@@ -179,7 +179,6 @@ function DeviceForm({
   const [sku, setSku] = useState(initial?.sku ?? "");
   const [stock, setStock] = useState(initial?.assembled_stock ?? 0);
   const [minThreshold, setMinThreshold] = useState(initial?.minimum_threshold ?? 0);
-  const [price, setPrice] = useState<number>(Number(initial?.unit_price ?? 0));
   const [imageUrl, setImageUrl] = useState<string | null>(initial?.image_url ?? null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -212,7 +211,7 @@ function DeviceForm({
     const payload = {
       company_id: companyId, name, sku,
       assembled_stock: stock, minimum_threshold: minThreshold,
-      unit_price: price, image_url: imageUrl,
+      image_url: imageUrl,
     };
 
     let deviceId = initial?.id;
@@ -266,7 +265,6 @@ function DeviceForm({
         <div className="space-y-1.5 col-span-2"><Label>SKU</Label><Input required value={sku} onChange={(e) => setSku(e.target.value)} /></div>
         <div className="space-y-1.5"><Label>Pre‑assembled stock</Label><Input type="number" min={0} value={stock} onChange={(e) => setStock(parseInt(e.target.value) || 0)} /></div>
         <div className="space-y-1.5"><Label>Min threshold</Label><Input type="number" min={0} value={minThreshold} onChange={(e) => setMinThreshold(parseInt(e.target.value) || 0)} /></div>
-        <div className="space-y-1.5 col-span-2"><Label>Unit price ($)</Label><Input type="number" min={0} step="0.01" value={price} onChange={(e) => setPrice(parseFloat(e.target.value) || 0)} /></div>
       </div>
 
       {/* Recipe */}

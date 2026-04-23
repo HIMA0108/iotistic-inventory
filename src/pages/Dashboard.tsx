@@ -1,43 +1,53 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Component, Device } from "@/types";
-import { rpcBuildCapacity } from "@/services/supabase/inventory";
+import { Component, Device, DeviceRecipe, DeviceDependency } from "@/types";
 import { readCache, writeCache } from "@/hooks/useInventoryCache";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, Cpu, AlertTriangle, TrendingUp, Hammer } from "lucide-react";
+import { Package, Cpu, AlertTriangle, Hammer, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface CapacityRow {
+const LOW_STOCK_THRESHOLD = 10;
+
+interface MissingPart {
+  name: string;
+  sku: string;
+  have: number;
+  needPerUnit: number;
+  shortBy: number; // shortage to build 1 unit
+}
+
+interface DeviceBuildInfo {
   device: Device;
   capacity: number;
+  limitingFactor: string | null; // name of limiting component/device
+  missingForOne: MissingPart[];
 }
 
 export default function Dashboard() {
   const [components, setComponents] = useState<Component[]>(() => readCache<Component[]>("components") ?? []);
   const [devices, setDevices] = useState<Device[]>(() => readCache<Device[]>("devices") ?? []);
-  const [capacities, setCapacities] = useState<CapacityRow[]>([]);
+  const [recipes, setRecipes] = useState<DeviceRecipe[]>([]);
+  const [deps, setDeps] = useState<DeviceDependency[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const [c, d] = await Promise.all([
+      const [c, d, r, dd] = await Promise.all([
         supabase.from("components").select("*").order("name"),
         supabase.from("devices").select("*").order("name"),
+        supabase.from("device_recipes").select("*"),
+        supabase.from("device_dependencies").select("*"),
       ]);
       if (!mounted) return;
       const comps = (c.data as Component[]) ?? [];
       const devs = (d.data as Device[]) ?? [];
       setComponents(comps);
       setDevices(devs);
+      setRecipes((r.data as DeviceRecipe[]) ?? []);
+      setDeps((dd.data as DeviceDependency[]) ?? []);
       writeCache("components", comps);
       writeCache("devices", devs);
-
-      const caps = await Promise.all(
-        devs.map(async (dev) => ({ device: dev, capacity: await rpcBuildCapacity(dev.id).catch(() => 0) }))
-      );
-      if (!mounted) return;
-      setCapacities(caps);
       setLoading(false);
     })();
     return () => {
@@ -45,71 +55,125 @@ export default function Dashboard() {
     };
   }, []);
 
-  const inventoryValue = components.reduce((sum, c) => sum + c.stock_count * Number(c.unit_cost ?? 0), 0)
-    + devices.reduce((sum, d) => sum + d.assembled_stock * Number(d.unit_price ?? 0), 0);
-  const lowStock = components.filter((c) => c.stock_count <= c.minimum_threshold).length
-    + devices.filter((d) => d.assembled_stock <= d.minimum_threshold).length;
-  const totalUnits = components.reduce((s, c) => s + c.stock_count, 0)
-    + devices.reduce((s, d) => s + d.assembled_stock, 0);
-  const buildable = capacities.reduce((s, r) => s + r.capacity, 0);
+  const buildInfo: DeviceBuildInfo[] = useMemo(() => {
+    const compMap = new Map(components.map((c) => [c.id, c]));
+    const devMap = new Map(devices.map((d) => [d.id, d]));
 
-  const stats = [
-    { label: "Inventory value", value: `$${inventoryValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, icon: TrendingUp, accent: "primary" as const },
-    { label: "Total units", value: totalUnits.toLocaleString(), icon: Package, accent: "secondary" as const },
-    { label: "Low‑stock alerts", value: lowStock.toString(), icon: AlertTriangle, accent: "warning" as const },
-    { label: "Buildable now", value: buildable.toLocaleString(), icon: Hammer, accent: "accent" as const },
-  ];
+    return devices.map((device) => {
+      const deviceRecipe = recipes.filter((r) => r.device_id === device.id);
+      const deviceDeps = deps.filter((dp) => dp.device_id === device.id);
+
+      let capacity = Number.POSITIVE_INFINITY;
+      let limitingFactor: string | null = null;
+      const missingForOne: MissingPart[] = [];
+
+      for (const r of deviceRecipe) {
+        const comp = compMap.get(r.component_id);
+        if (!comp) continue;
+        const possible = Math.floor(comp.stock_count / r.quantity);
+        if (possible < capacity) {
+          capacity = possible;
+          limitingFactor = comp.name;
+        }
+        if (comp.stock_count < r.quantity) {
+          missingForOne.push({
+            name: comp.name,
+            sku: comp.sku,
+            have: comp.stock_count,
+            needPerUnit: r.quantity,
+            shortBy: r.quantity - comp.stock_count,
+          });
+        }
+      }
+
+      for (const dp of deviceDeps) {
+        const dep = devMap.get(dp.depends_on_device_id);
+        if (!dep) continue;
+        const possible = Math.floor(dep.assembled_stock / dp.quantity);
+        if (possible < capacity) {
+          capacity = possible;
+          limitingFactor = `${dep.name} (assembled)`;
+        }
+        if (dep.assembled_stock < dp.quantity) {
+          missingForOne.push({
+            name: `${dep.name} (assembled device)`,
+            sku: dep.sku,
+            have: dep.assembled_stock,
+            needPerUnit: dp.quantity,
+            shortBy: dp.quantity - dep.assembled_stock,
+          });
+        }
+      }
+
+      if (!Number.isFinite(capacity)) capacity = 0;
+      return { device, capacity: Math.max(capacity, 0), limitingFactor, missingForOne };
+    });
+  }, [components, devices, recipes, deps]);
+
+  const lowStockComponents = useMemo(
+    () => components.filter((c) => c.stock_count <= LOW_STOCK_THRESHOLD),
+    [components]
+  );
+
+  const totalAssembledDevices = devices.reduce((s, d) => s + d.assembled_stock, 0);
+  const totalBuildable = buildInfo.reduce((s, b) => s + b.capacity, 0);
+  const distinctComponents = components.length;
 
   return (
     <div className="space-y-8 sm:pl-64">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Operations dashboard</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Live snapshot of stock, alerts and assembly capacity.</p>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Production dashboard</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Live view of devices, components, build capacity and missing parts.
+        </p>
       </header>
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-        {stats.map((s) => (
-          <StatTile key={s.label} {...s} />
-        ))}
+        <StatTile label="Device types" value={devices.length.toString()} icon={Cpu} accent="primary" />
+        <StatTile label="Assembled units" value={totalAssembledDevices.toLocaleString()} icon={Hammer} accent="accent" />
+        <StatTile label="Component types" value={distinctComponents.toString()} icon={Package} accent="secondary" />
+        <StatTile
+          label="Low‑stock alerts"
+          value={lowStockComponents.length.toString()}
+          icon={AlertTriangle}
+          accent="warning"
+        />
       </section>
 
+      {/* Devices: per-type stock & buildable */}
       <section>
-        <div className="mb-3 flex items-end justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">Build capacity</h2>
-            <p className="text-xs text-muted-foreground">Maximum units assemblable from current component stock.</p>
-          </div>
+        <div className="mb-3">
+          <h2 className="text-lg font-semibold">Devices — stock & buildable</h2>
+          <p className="text-xs text-muted-foreground">
+            For each device: how many are assembled and how many more we can build right now.
+          </p>
         </div>
-        {loading && capacities.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-surface-elevated p-8 text-center text-sm text-muted-foreground">
-            Calculating capacity…
-          </div>
-        ) : capacities.length === 0 ? (
-          <EmptyState
-            icon={Cpu}
-            title="No devices yet"
-            description="Create a device and define its component recipe to see build capacity."
-          />
+        {loading && buildInfo.length === 0 ? (
+          <SkeletonBlock label="Calculating capacity…" />
+        ) : buildInfo.length === 0 ? (
+          <EmptyState icon={Cpu} title="No devices yet" description="Create a device and define its recipe." />
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {capacities.map(({ device, capacity }) => (
-              <CapacityCard key={device.id} device={device} capacity={capacity} />
+            {buildInfo.map((info) => (
+              <DeviceCard key={info.device.id} info={info} />
             ))}
           </div>
         )}
       </section>
 
+      {/* Components: per-type stock */}
       <section>
-        <h2 className="mb-3 text-lg font-semibold">Low‑stock components</h2>
-        {components.filter((c) => c.stock_count <= c.minimum_threshold).length === 0 ? (
-          <div className="rounded-2xl border border-border bg-surface-elevated p-6 text-sm text-muted-foreground">
-            All components above threshold ✅
-          </div>
+        <div className="mb-3">
+          <h2 className="text-lg font-semibold">Components — stock by type</h2>
+          <p className="text-xs text-muted-foreground">Quantity available for each component.</p>
+        </div>
+        {components.length === 0 ? (
+          <EmptyState icon={Package} title="No components yet" description="Add components to track stock." />
         ) : (
           <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface-elevated">
-            {components
-              .filter((c) => c.stock_count <= c.minimum_threshold)
-              .map((c) => (
+            {components.map((c) => {
+              const low = c.stock_count <= LOW_STOCK_THRESHOLD;
+              return (
                 <li key={c.id} className="flex items-center gap-3 p-4">
                   <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg bg-secondary">
                     {c.image_url ? (
@@ -118,15 +182,51 @@ export default function Dashboard() {
                       <Package className="h-4 w-4 text-muted-foreground" />
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium">{c.name}</div>
                     <div className="text-xs text-muted-foreground">SKU {c.sku}</div>
                   </div>
-                  <span className="rounded-full bg-warning/15 px-2.5 py-1 text-xs font-semibold text-warning-foreground">
-                    {c.stock_count} / min {c.minimum_threshold}
-                  </span>
+                  <div className="text-right">
+                    <div className={cn("text-lg font-bold tabular-nums", low && "text-warning-foreground")}>
+                      {c.stock_count}
+                    </div>
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">in stock</div>
+                  </div>
+                  {low && (
+                    <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-warning/15 px-2.5 py-1 text-[11px] font-semibold text-warning-foreground">
+                      <AlertTriangle className="h-3 w-3" /> Low
+                    </span>
+                  )}
                 </li>
-              ))}
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      {/* Low stock alerts */}
+      <section>
+        <h2 className="mb-3 text-lg font-semibold">
+          Low‑stock alerts <span className="text-xs font-normal text-muted-foreground">(≤ {LOW_STOCK_THRESHOLD})</span>
+        </h2>
+        {lowStockComponents.length === 0 ? (
+          <div className="flex items-center gap-2 rounded-2xl border border-success/30 bg-success/5 p-4 text-sm text-success">
+            <CheckCircle2 className="h-4 w-4" /> All components are above the low‑stock threshold.
+          </div>
+        ) : (
+          <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-warning/30 bg-warning/5">
+            {lowStockComponents.map((c) => (
+              <li key={c.id} className="flex items-center gap-3 p-4">
+                <AlertTriangle className="h-4 w-4 text-warning-foreground" />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium">{c.name}</div>
+                  <div className="text-xs text-muted-foreground">SKU {c.sku}</div>
+                </div>
+                <span className="rounded-full bg-warning/20 px-2.5 py-1 text-xs font-semibold text-warning-foreground">
+                  {c.stock_count} left
+                </span>
+              </li>
+            ))}
           </ul>
         )}
       </section>
@@ -167,7 +267,8 @@ function StatTile({
   );
 }
 
-function CapacityCard({ device, capacity }: { device: Device; capacity: number }) {
+function DeviceCard({ info }: { info: DeviceBuildInfo }) {
+  const { device, capacity, limitingFactor, missingForOne } = info;
   const tone =
     capacity === 0
       ? "border-destructive/30 bg-destructive/5"
@@ -187,16 +288,59 @@ function CapacityCard({ device, capacity }: { device: Device; capacity: number }
         </div>
         <div className="min-w-0 flex-1">
           <CardTitle className="truncate text-base">{device.name}</CardTitle>
-          <div className="text-xs text-muted-foreground">In stock: {device.assembled_stock}</div>
+          <div className="text-xs text-muted-foreground">SKU {device.sku}</div>
         </div>
       </CardHeader>
-      <CardContent className="p-4 pt-2">
-        <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-bold tracking-tight">{capacity}</span>
-          <span className="text-xs text-muted-foreground">buildable</span>
+      <CardContent className="space-y-3 p-4 pt-2">
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-xl bg-surface-elevated p-2.5 text-center">
+            <div className="text-2xl font-bold tabular-nums">{device.assembled_stock}</div>
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Assembled</div>
+          </div>
+          <div className="rounded-xl bg-primary-container p-2.5 text-center text-primary-container-foreground">
+            <div className="text-2xl font-bold tabular-nums">{capacity}</div>
+            <div className="text-[10px] uppercase tracking-wide opacity-80">Buildable now</div>
+          </div>
         </div>
+
+        {capacity > 0 && limitingFactor && (
+          <div className="text-[11px] text-muted-foreground">
+            Limited by <span className="font-medium text-foreground">{limitingFactor}</span>
+          </div>
+        )}
+
+        {missingForOne.length > 0 ? (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3">
+            <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-destructive">
+              <AlertTriangle className="h-3.5 w-3.5" /> Missing to build 1 unit
+            </div>
+            <ul className="space-y-1">
+              {missingForOne.map((m) => (
+                <li key={m.sku + m.name} className="flex items-center justify-between text-xs">
+                  <span className="truncate pr-2">{m.name}</span>
+                  <span className="shrink-0 font-medium">
+                    need <span className="text-destructive">+{m.shortBy}</span>{" "}
+                    <span className="text-muted-foreground">
+                      ({m.have}/{m.needPerUnit})
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : capacity === 0 ? (
+          <div className="text-xs text-muted-foreground">No recipe defined.</div>
+        ) : null}
       </CardContent>
     </Card>
+  );
+}
+
+function SkeletonBlock({ label }: { label: string }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-border bg-surface-elevated p-8 text-center text-sm text-muted-foreground">
+      {label}
+    </div>
   );
 }
 
