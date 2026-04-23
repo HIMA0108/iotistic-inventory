@@ -1,9 +1,17 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Index from "./pages/Index.tsx";
+import { AuthProvider } from "@/hooks/useAuth";
+import AuthGuard from "@/components/auth/AuthGuard";
+import AppShell from "@/components/layout/AppShell";
+import AuthPage from "./pages/Auth";
+import Dashboard from "./pages/Dashboard";
+import ComponentsPage from "./pages/Components";
+import DevicesPage from "./pages/Devices";
+import ScanPage from "./pages/Scan";
+import LogsPage from "./pages/Logs";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -12,13 +20,28 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
-      <Sonner />
+      <Sonner position="top-center" richColors />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth" element={<AuthPage />} />
+            <Route
+              element={
+                <AuthGuard>
+                  <AppShell />
+                </AuthGuard>
+              }
+            >
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/components" element={<ComponentsPage />} />
+              <Route path="/devices" element={<DevicesPage />} />
+              <Route path="/scan" element={<ScanPage />} />
+              <Route path="/logs" element={<LogsPage />} />
+            </Route>
+            <Route path="/index" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
