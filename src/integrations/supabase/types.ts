@@ -14,16 +14,339 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      companies: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
+      components: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          image_url: string | null
+          minimum_threshold: number
+          name: string
+          sku: string
+          stock_count: number
+          unit_cost: number
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          minimum_threshold?: number
+          name: string
+          sku: string
+          stock_count?: number
+          unit_cost?: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          minimum_threshold?: number
+          name?: string
+          sku?: string
+          stock_count?: number
+          unit_cost?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "components_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      device_dependencies: {
+        Row: {
+          depends_on_device_id: string
+          device_id: string
+          id: string
+          quantity: number
+        }
+        Insert: {
+          depends_on_device_id: string
+          device_id: string
+          id?: string
+          quantity: number
+        }
+        Update: {
+          depends_on_device_id?: string
+          device_id?: string
+          id?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_dependencies_depends_on_device_id_fkey"
+            columns: ["depends_on_device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "device_dependencies_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      device_recipes: {
+        Row: {
+          component_id: string
+          device_id: string
+          id: string
+          quantity: number
+        }
+        Insert: {
+          component_id: string
+          device_id: string
+          id?: string
+          quantity: number
+        }
+        Update: {
+          component_id?: string
+          device_id?: string
+          id?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_recipes_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "components"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "device_recipes_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      devices: {
+        Row: {
+          assembled_stock: number
+          company_id: string
+          created_at: string
+          id: string
+          image_url: string | null
+          minimum_threshold: number
+          name: string
+          sku: string
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          assembled_stock?: number
+          company_id: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          minimum_threshold?: number
+          name: string
+          sku: string
+          unit_price?: number
+          updated_at?: string
+        }
+        Update: {
+          assembled_stock?: number
+          company_id?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          minimum_threshold?: number
+          name?: string
+          sku?: string
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_logs: {
+        Row: {
+          action: Database["public"]["Enums"]["log_action"]
+          company_id: string
+          created_at: string
+          id: string
+          item_id: string
+          item_name: string
+          item_type: Database["public"]["Enums"]["log_item_type"]
+          note: string | null
+          quantity: number
+          user_id: string | null
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["log_action"]
+          company_id: string
+          created_at?: string
+          id?: string
+          item_id: string
+          item_name: string
+          item_type: Database["public"]["Enums"]["log_item_type"]
+          note?: string | null
+          quantity: number
+          user_id?: string | null
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["log_action"]
+          company_id?: string
+          created_at?: string
+          id?: string
+          item_id?: string
+          item_name?: string
+          item_type?: Database["public"]["Enums"]["log_item_type"]
+          note?: string | null
+          quantity?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_logs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          company_id: string
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      adjust_component: {
+        Args: { _component_id: string; _delta: number; _note?: string }
+        Returns: undefined
+      }
+      assemble_device: {
+        Args: { _device_id: string; _note?: string; _qty: number }
+        Returns: undefined
+      }
+      build_capacity: { Args: { _device_id: string }; Returns: number }
+      deliver_device: {
+        Args: { _device_id: string; _note?: string; _qty: number }
+        Returns: undefined
+      }
+      get_user_company: { Args: { _user_id: string }; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin_of: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "staff"
+      log_action: "in" | "out" | "assemble" | "deliver" | "adjust"
+      log_item_type: "component" | "device"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +473,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "staff"],
+      log_action: ["in", "out", "assemble", "deliver", "adjust"],
+      log_item_type: ["component", "device"],
+    },
   },
 } as const
