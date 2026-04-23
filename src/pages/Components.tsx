@@ -117,7 +117,7 @@ export default function ComponentsPage() {
                 <CardContent className="space-y-3 p-4">
                   <div>
                     <div className="font-semibold leading-tight">{c.name}</div>
-                    <div className="text-xs text-muted-foreground">SKU {c.sku} · ${Number(c.unit_cost).toFixed(2)}</div>
+                    <div className="text-xs text-muted-foreground">SKU {c.sku}</div>
                   </div>
                   <div className="flex items-center justify-between gap-2">
                     <div>
@@ -165,8 +165,7 @@ function ComponentForm({
   const [name, setName] = useState(initial?.name ?? "");
   const [sku, setSku] = useState(initial?.sku ?? "");
   const [stock, setStock] = useState(initial?.stock_count ?? 0);
-  const [minThreshold, setMinThreshold] = useState(initial?.minimum_threshold ?? 0);
-  const [unitCost, setUnitCost] = useState<number>(Number(initial?.unit_cost ?? 0));
+  const [minThreshold, setMinThreshold] = useState(initial?.minimum_threshold ?? 10);
   const [imageUrl, setImageUrl] = useState<string | null>(initial?.image_url ?? null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -193,7 +192,6 @@ function ComponentForm({
       sku,
       stock_count: stock,
       minimum_threshold: minThreshold,
-      unit_cost: unitCost,
       image_url: imageUrl,
     };
     const { error } = initial
@@ -243,12 +241,8 @@ function ComponentForm({
           <Input id="cf-stock" type="number" min={0} value={stock} onChange={(e) => setStock(parseInt(e.target.value) || 0)} />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="cf-min">Min threshold</Label>
+          <Label htmlFor="cf-min">Low‑stock threshold</Label>
           <Input id="cf-min" type="number" min={0} value={minThreshold} onChange={(e) => setMinThreshold(parseInt(e.target.value) || 0)} />
-        </div>
-        <div className="space-y-1.5 col-span-2">
-          <Label htmlFor="cf-cost">Unit cost ($)</Label>
-          <Input id="cf-cost" type="number" min={0} step="0.01" value={unitCost} onChange={(e) => setUnitCost(parseFloat(e.target.value) || 0)} />
         </div>
       </div>
       <Button type="submit" className="w-full" size="lg" disabled={saving || uploading}>
