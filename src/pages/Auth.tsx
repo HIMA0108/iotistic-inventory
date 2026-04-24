@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Boxes, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import logo from "@/assets/iotistic-logo.png";
 
 export default function AuthPage() {
   const navigate = useNavigate();
@@ -58,13 +59,13 @@ export default function AuthPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-surface px-4 py-10">
       <div className="w-full max-w-md">
-        <div className="mb-8 flex items-center justify-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-primary text-primary-foreground shadow-elevation-3">
-            <Boxes className="h-6 w-6" />
+        <div className="mb-8 flex flex-col items-center justify-center gap-3 text-center">
+          <div className="h-16 w-16 overflow-hidden rounded-2xl shadow-elevation-3">
+            <img src={logo} alt="Iotistic" className="h-full w-full object-cover" width={64} height={64} />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Warehouse OS</h1>
-            <p className="text-sm text-muted-foreground">Enterprise inventory & assembly</p>
+            <h1 className="text-2xl font-semibold tracking-tight">Iotistic Production Inventory</h1>
+            <p className="text-sm text-muted-foreground">Sign in to manage your warehouse</p>
           </div>
         </div>
 

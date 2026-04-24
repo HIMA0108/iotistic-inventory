@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { LayoutDashboard, Package, Cpu, ScanLine, History, LogOut, Wifi, WifiOff, Users } from "lucide-react";
+import { LayoutDashboard, Package, Cpu, ScanLine, History, LogOut, Wifi, WifiOff, Users, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useOnlineStatus } from "@/hooks/useInventoryCache";
 import { cn } from "@/lib/utils";
@@ -21,6 +21,7 @@ export default function AppShell() {
     { to: "/scan", label: "Scan / In‑Out", icon: ScanLine, adminOnly: false },
     { to: "/components", label: "Components", icon: Package, adminOnly: false },
     { to: "/devices", label: "Devices", icon: Cpu, adminOnly: false },
+    { to: "/planner", label: "Planner", icon: Calculator, adminOnly: true },
     { to: "/logs", label: "Activity", icon: History, adminOnly: false },
     { to: "/users", label: "Users", icon: Users, adminOnly: true },
   ].filter((i) => !i.adminOnly || role === "admin");
@@ -72,7 +73,7 @@ export default function AppShell() {
 
       {/* Bottom nav (mobile) */}
       <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-surface-elevated/95 backdrop-blur sm:hidden">
-        <ul className={cn("grid", navItems.length === 6 ? "grid-cols-6" : "grid-cols-5")}>
+        <ul className={cn("grid", `grid-cols-${navItems.length}`)} style={{ gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))` }}>
           {navItems.map((item) => (
             <li key={item.to}>
               <NavLink
