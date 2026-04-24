@@ -17,7 +17,6 @@ interface ComponentNeed {
   needed: number;
   available: number;
   shortage: number;
-  estCost: number;
 }
 
 interface DeviceNeed {
@@ -107,7 +106,6 @@ export default function PlannerPage() {
           needed,
           available: c.stock_count,
           shortage,
-          estCost: shortage * Number(c.unit_cost ?? 0),
         };
       })
       .filter(Boolean) as ComponentNeed[];
@@ -123,10 +121,9 @@ export default function PlannerPage() {
       })
       .filter(Boolean) as DeviceNeed[];
 
-    const totalShortageCost = componentNeeds.reduce((s, n) => s + n.estCost, 0);
     const canBuild = componentNeeds.every((n) => n.shortage === 0) && deviceNeeds.every((n) => n.shortage === 0);
 
-    return { componentNeeds, deviceNeeds, totalShortageCost, canBuild };
+    return { componentNeeds, deviceNeeds, canBuild };
   }, [deviceId, qty, components, devices, recipes, deps]);
 
   const selectedDevice = devices.find((d) => d.id === deviceId);
@@ -189,7 +186,7 @@ export default function PlannerPage() {
       ) : (
         <>
           {/* Summary */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Card className="shadow-elevation-1">
               <CardContent className="p-4">
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">Target</div>
@@ -216,14 +213,6 @@ export default function PlannerPage() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="shadow-elevation-1">
-              <CardContent className="p-4">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">Est. cost to cover shortage</div>
-                <div className="mt-1 text-2xl font-bold">
-                  {plan.totalShortageCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
           {/* Components needed */}
@@ -246,7 +235,6 @@ export default function PlannerPage() {
                       <TableHead className="text-right">Needed</TableHead>
                       <TableHead className="text-right">In stock</TableHead>
                       <TableHead className="text-right">Shortage</TableHead>
-                      <TableHead className="text-right">Est. cost</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -264,9 +252,6 @@ export default function PlannerPage() {
                           ) : (
                             <Badge className="bg-success/15 text-success hover:bg-success/20">OK</Badge>
                           )}
-                        </TableCell>
-                        <TableCell className="text-right text-muted-foreground">
-                          {n.estCost > 0 ? n.estCost.toLocaleString(undefined, { maximumFractionDigits: 2 }) : "—"}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -317,13 +302,13 @@ export default function PlannerPage() {
             </Card>
           )}
 
-          {/* Shopping list */}
+          {/* Needed components */}
           {!plan.canBuild && plan.componentNeeds.some((n) => n.shortage > 0) && (
             <Card className="border-warning/40 bg-warning/5 shadow-elevation-1">
               <CardContent className="p-5">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-warning" />
-                  <h2 className="text-base font-semibold">Shopping list</h2>
+                  <h2 className="text-base font-semibold">Needed components</h2>
                 </div>
                 <ul className="mt-3 space-y-1.5 text-sm">
                   {plan.componentNeeds
