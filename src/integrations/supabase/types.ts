@@ -39,6 +39,7 @@ export type Database = {
         Row: {
           company_id: string
           created_at: string
+          defective_count: number
           id: string
           image_url: string | null
           minimum_threshold: number
@@ -51,6 +52,7 @@ export type Database = {
         Insert: {
           company_id: string
           created_at?: string
+          defective_count?: number
           id?: string
           image_url?: string | null
           minimum_threshold?: number
@@ -63,6 +65,7 @@ export type Database = {
         Update: {
           company_id?: string
           created_at?: string
+          defective_count?: number
           id?: string
           image_url?: string | null
           minimum_threshold?: number
@@ -331,6 +334,7 @@ export type Database = {
         Returns: undefined
       }
       get_user_company: { Args: { _user_id: string }; Returns: string }
+      has_any_role: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -342,10 +346,22 @@ export type Database = {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
       }
+      mark_component_defective: {
+        Args: { _component_id: string; _note?: string; _qty: number }
+        Returns: undefined
+      }
+      remove_user_role: { Args: { _user_id: string }; Returns: undefined }
+      set_user_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "staff"
-      log_action: "in" | "out" | "assemble" | "deliver" | "adjust"
+      log_action: "in" | "out" | "assemble" | "deliver" | "adjust" | "defective"
       log_item_type: "component" | "device"
     }
     CompositeTypes: {
@@ -475,7 +491,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "staff"],
-      log_action: ["in", "out", "assemble", "deliver", "adjust"],
+      log_action: ["in", "out", "assemble", "deliver", "adjust", "defective"],
       log_item_type: ["component", "device"],
     },
   },
