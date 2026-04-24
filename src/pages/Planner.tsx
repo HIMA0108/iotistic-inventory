@@ -106,7 +106,6 @@ export default function PlannerPage() {
           needed,
           available: c.stock_count,
           shortage,
-          estCost: shortage * Number(c.unit_cost ?? 0),
         };
       })
       .filter(Boolean) as ComponentNeed[];
@@ -122,10 +121,9 @@ export default function PlannerPage() {
       })
       .filter(Boolean) as DeviceNeed[];
 
-    const totalShortageCost = componentNeeds.reduce((s, n) => s + n.estCost, 0);
     const canBuild = componentNeeds.every((n) => n.shortage === 0) && deviceNeeds.every((n) => n.shortage === 0);
 
-    return { componentNeeds, deviceNeeds, totalShortageCost, canBuild };
+    return { componentNeeds, deviceNeeds, canBuild };
   }, [deviceId, qty, components, devices, recipes, deps]);
 
   const selectedDevice = devices.find((d) => d.id === deviceId);
