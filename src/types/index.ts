@@ -7,6 +7,7 @@ export interface Component {
   sku: string;
   image_url: string | null;
   stock_count: number;
+  defective_count: number;
   minimum_threshold: number;
   unit_cost: number;
   created_at: string;
@@ -40,7 +41,7 @@ export interface DeviceDependency {
   quantity: number;
 }
 
-export type LogAction = "in" | "out" | "assemble" | "deliver" | "adjust";
+export type LogAction = "in" | "out" | "assemble" | "deliver" | "adjust" | "defective";
 export type LogItemType = "component" | "device";
 
 export interface InventoryLog {

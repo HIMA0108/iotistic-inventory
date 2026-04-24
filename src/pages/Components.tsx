@@ -2,14 +2,14 @@ import { useEffect, useState, FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { Component } from "@/types";
-import { uploadComponentImage, rpcAdjustComponent } from "@/services/supabase/inventory";
+import { uploadComponentImage, rpcAdjustComponent, rpcMarkComponentDefective } from "@/services/supabase/inventory";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Package, Pencil, Trash2, Minus, Plus as PlusIcon, ImagePlus, Loader2, AlertTriangle } from "lucide-react";
+import { Plus, Package, Pencil, Trash2, Minus, Plus as PlusIcon, ImagePlus, Loader2, AlertTriangle, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function ComponentsPage() {
@@ -18,6 +18,10 @@ export default function ComponentsPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Component | null>(null);
   const [open, setOpen] = useState(false);
+  const [defectiveTarget, setDefectiveTarget] = useState<Component | null>(null);
+  const [defectiveQty, setDefectiveQty] = useState(1);
+  const [defectiveNote, setDefectiveNote] = useState("");
+  const [markingDefective, setMarkingDefective] = useState(false);
 
   const isAdmin = role === "admin";
 
@@ -48,6 +52,23 @@ export default function ComponentsPage() {
     else {
       toast.success("Component deleted");
       refresh();
+    }
+  };
+
+  const handleMarkDefective = async () => {
+    if (!defectiveTarget) return;
+    setMarkingDefective(true);
+    try {
+      await rpcMarkComponentDefective(defectiveTarget.id, defectiveQty, defectiveNote || undefined);
+      toast.success(`${defectiveQty} marked defective`);
+      setDefectiveTarget(null);
+      setDefectiveQty(1);
+      setDefectiveNote("");
+      refresh();
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to mark defective");
+    } finally {
+      setMarkingDefective(false);
     }
   };
 
@@ -113,6 +134,11 @@ export default function ComponentsPage() {
                       <AlertTriangle className="h-3 w-3" /> Low
                     </span>
                   )}
+                  {c.defective_count > 0 && (
+                    <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-destructive/95 px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-destructive-foreground">
+                      <ShieldAlert className="h-3 w-3" /> {c.defective_count} defective
+                    </span>
+                  )}
                 </div>
                 <CardContent className="space-y-3 p-4">
                   <div>
@@ -122,7 +148,10 @@ export default function ComponentsPage() {
                   <div className="flex items-center justify-between gap-2">
                     <div>
                       <div className={cn("text-2xl font-bold tracking-tight", low && "text-warning-foreground")}>{c.stock_count}</div>
-                      <div className="text-[11px] text-muted-foreground">min {c.minimum_threshold}</div>
+                      <div className="text-[11px] text-muted-foreground">
+                        min {c.minimum_threshold}
+                        {c.defective_count > 0 && <span className="ml-1 text-destructive">· {c.defective_count} bad</span>}
+                      </div>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Button size="icon" variant="outline" onClick={() => handleAdjust(c, -1)} aria-label="Decrease">
@@ -130,6 +159,16 @@ export default function ComponentsPage() {
                       </Button>
                       <Button size="icon" variant="default" onClick={() => handleAdjust(c, 1)} aria-label="Increase">
                         <PlusIcon className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => { setDefectiveTarget(c); setDefectiveQty(1); setDefectiveNote(""); }}
+                        aria-label="Mark defective"
+                        title="Mark as defective"
+                        disabled={c.stock_count === 0}
+                      >
+                        <ShieldAlert className="h-4 w-4 text-destructive" />
                       </Button>
                       {isAdmin && (
                         <>
@@ -149,6 +188,58 @@ export default function ComponentsPage() {
           })}
         </div>
       )}
+
+      {/* Mark defective dialog */}
+      <Dialog open={!!defectiveTarget} onOpenChange={(v) => { if (!v) setDefectiveTarget(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5 text-destructive" />
+              Mark as defective
+            </DialogTitle>
+          </DialogHeader>
+          {defectiveTarget && (
+            <div className="space-y-4">
+              <div className="rounded-lg bg-secondary p-3">
+                <div className="text-sm font-semibold">{defectiveTarget.name}</div>
+                <div className="text-xs text-muted-foreground">
+                  Available: {defectiveTarget.stock_count} · Already defective: {defectiveTarget.defective_count}
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="def-qty">Quantity</Label>
+                <Input
+                  id="def-qty"
+                  type="number"
+                  min={1}
+                  max={defectiveTarget.stock_count}
+                  value={defectiveQty}
+                  onChange={(e) => setDefectiveQty(Math.max(1, parseInt(e.target.value) || 1))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="def-note">Reason (optional)</Label>
+                <Input
+                  id="def-note"
+                  placeholder="e.g. broken on arrival"
+                  value={defectiveNote}
+                  onChange={(e) => setDefectiveNote(e.target.value)}
+                />
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setDefectiveTarget(null)}>Cancel</Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleMarkDefective}
+                  disabled={markingDefective || defectiveQty < 1 || defectiveQty > defectiveTarget.stock_count}
+                >
+                  {markingDefective ? <Loader2 className="h-4 w-4 animate-spin" /> : "Mark defective"}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
