@@ -9,6 +9,25 @@ export async function rpcAdjustComponent(componentId: string, delta: number, not
   if (error) throw error;
 }
 
+export async function rpcMarkComponentDefective(componentId: string, qty: number, note?: string) {
+  const { error } = await supabase.rpc("mark_component_defective", {
+    _component_id: componentId,
+    _qty: qty,
+    _note: note ?? null,
+  });
+  if (error) throw error;
+}
+
+export async function rpcSetUserRole(userId: string, role: "admin" | "staff") {
+  const { error } = await supabase.rpc("set_user_role", { _user_id: userId, _role: role });
+  if (error) throw error;
+}
+
+export async function rpcRemoveUserRole(userId: string) {
+  const { error } = await supabase.rpc("remove_user_role", { _user_id: userId });
+  if (error) throw error;
+}
+
 export async function rpcAssembleDevice(deviceId: string, qty: number, note?: string) {
   const { error } = await supabase.rpc("assemble_device", {
     _device_id: deviceId,
