@@ -9,7 +9,9 @@ interface AuthContextValue {
   role: AppRole | null;
   companyId: string | null;
   loading: boolean;
+  roleLoaded: boolean;
   signOut: () => Promise<void>;
+  refreshRole: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -20,17 +22,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<AppRole | null>(null);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [roleLoaded, setRoleLoaded] = useState<boolean>(false);
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_evt, s) => {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
-        // Defer role fetch to avoid deadlocks
+        setRoleLoaded(false);
         setTimeout(() => fetchRoleAndCompany(s.user.id), 0);
       } else {
         setRole(null);
         setCompanyId(null);
+        setRoleLoaded(false);
       }
     });
 
@@ -61,6 +65,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq("user_id", userId);
     const r = roles?.map((x) => x.role) ?? [];
     setRole(r.includes("admin" as AppRole) ? "admin" : r.includes("staff" as AppRole) ? "staff" : null);
+    setRoleLoaded(true);
+  }
+
+  async function refreshRole() {
+    if (user) await fetchRoleAndCompany(user.id);
   }
 
   async function signOut() {
@@ -68,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, session, role, companyId, loading, signOut }}>
+    <AuthContext.Provider value={{ user, session, role, companyId, loading, roleLoaded, signOut, refreshRole }}>
       {children}
     </AuthContext.Provider>
   );

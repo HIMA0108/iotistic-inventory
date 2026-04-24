@@ -1,9 +1,10 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { Boxes, LayoutDashboard, Package, Cpu, ScanLine, History, LogOut, Wifi, WifiOff } from "lucide-react";
+import { LayoutDashboard, Package, Cpu, ScanLine, History, LogOut, Wifi, WifiOff, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useOnlineStatus } from "@/hooks/useInventoryCache";
 import { cn } from "@/lib/utils";
+import logo from "@/assets/iotistic-logo.png";
 
 export default function AppShell() {
   const { user, role, signOut } = useAuth();
@@ -16,12 +17,13 @@ export default function AppShell() {
   };
 
   const navItems = [
-    { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
-    { to: "/scan", label: "Scan / In‑Out", icon: ScanLine },
-    { to: "/components", label: "Components", icon: Package },
-    { to: "/devices", label: "Devices", icon: Cpu },
-    { to: "/logs", label: "Activity", icon: History },
-  ];
+    { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true, adminOnly: false },
+    { to: "/scan", label: "Scan / In‑Out", icon: ScanLine, adminOnly: false },
+    { to: "/components", label: "Components", icon: Package, adminOnly: false },
+    { to: "/devices", label: "Devices", icon: Cpu, adminOnly: false },
+    { to: "/logs", label: "Activity", icon: History, adminOnly: false },
+    { to: "/users", label: "Users", icon: Users, adminOnly: true },
+  ].filter((i) => !i.adminOnly || role === "admin");
 
   return (
     <div className="min-h-screen bg-gradient-surface">
@@ -29,12 +31,12 @@ export default function AppShell() {
       <header className="sticky top-0 z-30 border-b border-border bg-surface-elevated/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:px-6">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground shadow-elevation-2">
-              <Boxes className="h-5 w-5" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary shadow-elevation-2 overflow-hidden">
+              <img src={logo} alt="Iotistic" className="h-full w-full object-contain p-1" />
             </div>
             <div className="leading-tight">
-              <div className="text-sm font-semibold tracking-tight">Warehouse OS</div>
-              <div className="text-[11px] text-muted-foreground">Enterprise WMS</div>
+              <div className="text-sm font-semibold tracking-tight">Iotistic Production</div>
+              <div className="text-[11px] text-muted-foreground">Inventory</div>
             </div>
           </div>
 
