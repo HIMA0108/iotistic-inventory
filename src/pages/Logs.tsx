@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { InventoryLog } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowDownToLine, ArrowUpFromLine, Hammer, Truck, Sliders, History } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, Hammer, Truck, Sliders, History, AlertOctagon, User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ICONS = {
@@ -11,6 +11,7 @@ const ICONS = {
   assemble: Hammer,
   deliver: Truck,
   adjust: Sliders,
+  defective: AlertOctagon,
 } as const;
 
 const ACTION_TONE: Record<string, string> = {
@@ -19,10 +20,12 @@ const ACTION_TONE: Record<string, string> = {
   assemble: "bg-primary-container text-primary-container-foreground",
   deliver: "bg-accent/15 text-accent",
   adjust: "bg-secondary text-secondary-foreground",
+  defective: "bg-destructive/15 text-destructive",
 };
 
 export default function LogsPage() {
   const [logs, setLogs] = useState<InventoryLog[]>([]);
+  const [profiles, setProfiles] = useState<Record<string, { name: string; email: string | null }>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,8 +34,22 @@ export default function LogsPage() {
         .from("inventory_logs")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(200);
-      setLogs((data as InventoryLog[]) ?? []);
+        .limit(300);
+      const list = (data as InventoryLog[]) ?? [];
+      setLogs(list);
+
+      const userIds = Array.from(new Set(list.map((l) => l.user_id).filter(Boolean) as string[]));
+      if (userIds.length > 0) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", userIds);
+        const map: Record<string, { name: string; email: string | null }> = {};
+        (profs ?? []).forEach((p) => {
+          map[p.id] = { name: p.full_name?.trim() || (p.email ?? "Unknown"), email: p.email };
+        });
+        setProfiles(map);
+      }
       setLoading(false);
     })();
   }, []);
@@ -41,7 +58,7 @@ export default function LogsPage() {
     <div className="space-y-6 sm:pl-64">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Activity log</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Last 200 stock movements.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Last 300 stock movements.</p>
       </header>
 
       {loading ? (
@@ -57,10 +74,11 @@ export default function LogsPage() {
           <CardContent className="p-0">
             <ul className="divide-y divide-border">
               {logs.map((log) => {
-                const Icon = ICONS[log.action];
+                const Icon = ICONS[log.action] ?? Sliders;
+                const who = log.user_id ? profiles[log.user_id]?.name ?? "Unknown user" : "System";
                 return (
                   <li key={log.id} className="flex items-center gap-3 p-4">
-                    <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl", ACTION_TONE[log.action])}>
+                    <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", ACTION_TONE[log.action])}>
                       <Icon className="h-5 w-5" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -70,13 +88,25 @@ export default function LogsPage() {
                           {log.item_type}
                         </span>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {log.action.toUpperCase()} · {new Date(log.created_at).toLocaleString()}
-                        {log.note ? ` · ${log.note}` : ""}
+                      <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                        <span className="font-semibold uppercase tracking-wide">{log.action}</span>
+                        <span>·</span>
+                        <span className="inline-flex items-center gap-1">
+                          <UserIcon className="h-3 w-3" />
+                          {who}
+                        </span>
+                        <span>·</span>
+                        <span>{new Date(log.created_at).toLocaleString()}</span>
+                        {log.note ? (
+                          <>
+                            <span>·</span>
+                            <span className="truncate">{log.note}</span>
+                          </>
+                        ) : null}
                       </div>
                     </div>
                     <div className="text-lg font-bold tabular-nums">
-                      {["out", "deliver"].includes(log.action) ? "−" : "+"}
+                      {["out", "deliver", "defective"].includes(log.action) ? "−" : "+"}
                       {log.quantity}
                     </div>
                   </li>
@@ -89,3 +119,4 @@ export default function LogsPage() {
     </div>
   );
 }
+
