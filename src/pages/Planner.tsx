@@ -186,7 +186,7 @@ export default function PlannerPage() {
       ) : (
         <>
           {/* Summary */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Card className="shadow-elevation-1">
               <CardContent className="p-4">
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">Target</div>
@@ -210,14 +210,6 @@ export default function PlannerPage() {
                       <span className="text-lg font-semibold text-warning-foreground">Shortages</span>
                     </>
                   )}
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="shadow-elevation-1">
-              <CardContent className="p-4">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">Est. cost to cover shortage</div>
-                <div className="mt-1 text-2xl font-bold">
-                  {plan.totalShortageCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                 </div>
               </CardContent>
             </Card>
