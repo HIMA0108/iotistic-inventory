@@ -240,10 +240,6 @@ export default function ComponentsPage() {
           )}
         </DialogContent>
       </Dialog>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }
