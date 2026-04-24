@@ -302,13 +302,13 @@ export default function PlannerPage() {
             </Card>
           )}
 
-          {/* Shopping list */}
+          {/* Needed components */}
           {!plan.canBuild && plan.componentNeeds.some((n) => n.shortage > 0) && (
             <Card className="border-warning/40 bg-warning/5 shadow-elevation-1">
               <CardContent className="p-5">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-warning" />
-                  <h2 className="text-base font-semibold">Shopping list</h2>
+                  <h2 className="text-base font-semibold">Needed components</h2>
                 </div>
                 <ul className="mt-3 space-y-1.5 text-sm">
                   {plan.componentNeeds
