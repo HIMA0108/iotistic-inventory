@@ -4,7 +4,7 @@ import { LayoutDashboard, Package, Cpu, ScanLine, History, LogOut, Wifi, WifiOff
 import { Button } from "@/components/ui/button";
 import { useOnlineStatus } from "@/hooks/useInventoryCache";
 import { cn } from "@/lib/utils";
-import logo from "@/assets/iotistic-logo.png";
+import logoMark from "@/assets/iotistic-icon.png";
 
 export default function AppShell() {
   const { user, role, signOut } = useAuth();
@@ -32,8 +32,8 @@ export default function AppShell() {
       <header className="sticky top-0 z-30 border-b border-border bg-surface-elevated/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:px-6">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary shadow-elevation-2 overflow-hidden">
-              <img src={logo} alt="Iotistic" className="h-full w-full object-contain p-1" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-primary shadow-elevation-2">
+              <img src={logoMark} alt="Iotistic" className="h-7 w-7 object-contain" />
             </div>
             <div className="leading-tight">
               <div className="text-sm font-semibold tracking-tight">Iotistic Production</div>
