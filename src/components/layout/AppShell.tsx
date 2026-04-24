@@ -72,7 +72,7 @@ export default function AppShell() {
 
       {/* Bottom nav (mobile) */}
       <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-surface-elevated/95 backdrop-blur sm:hidden">
-        <ul className="grid grid-cols-5">
+        <ul className={cn("grid", navItems.length === 6 ? "grid-cols-6" : "grid-cols-5")}>
           {navItems.map((item) => (
             <li key={item.to}>
               <NavLink

@@ -13,6 +13,7 @@ import DevicesPage from "./pages/Devices";
 import ScanPage from "./pages/Scan";
 import LogsPage from "./pages/Logs";
 import NotFound from "./pages/NotFound.tsx";
+import UsersPage from "./pages/Users";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
               <Route path="/devices" element={<DevicesPage />} />
               <Route path="/scan" element={<ScanPage />} />
               <Route path="/logs" element={<LogsPage />} />
+              <Route path="/users" element={<UsersPage />} />
             </Route>
             <Route path="/index" element={<Navigate to="/" replace />} />
             <Route path="*" element={<NotFound />} />
