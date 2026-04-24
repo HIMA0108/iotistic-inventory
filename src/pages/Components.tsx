@@ -2,14 +2,14 @@ import { useEffect, useState, FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { Component } from "@/types";
-import { uploadComponentImage, rpcAdjustComponent } from "@/services/supabase/inventory";
+import { uploadComponentImage, rpcAdjustComponent, rpcMarkComponentDefective } from "@/services/supabase/inventory";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Package, Pencil, Trash2, Minus, Plus as PlusIcon, ImagePlus, Loader2, AlertTriangle } from "lucide-react";
+import { Plus, Package, Pencil, Trash2, Minus, Plus as PlusIcon, ImagePlus, Loader2, AlertTriangle, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function ComponentsPage() {
@@ -18,6 +18,10 @@ export default function ComponentsPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Component | null>(null);
   const [open, setOpen] = useState(false);
+  const [defectiveTarget, setDefectiveTarget] = useState<Component | null>(null);
+  const [defectiveQty, setDefectiveQty] = useState(1);
+  const [defectiveNote, setDefectiveNote] = useState("");
+  const [markingDefective, setMarkingDefective] = useState(false);
 
   const isAdmin = role === "admin";
 
@@ -48,6 +52,23 @@ export default function ComponentsPage() {
     else {
       toast.success("Component deleted");
       refresh();
+    }
+  };
+
+  const handleMarkDefective = async () => {
+    if (!defectiveTarget) return;
+    setMarkingDefective(true);
+    try {
+      await rpcMarkComponentDefective(defectiveTarget.id, defectiveQty, defectiveNote || undefined);
+      toast.success(`${defectiveQty} marked defective`);
+      setDefectiveTarget(null);
+      setDefectiveQty(1);
+      setDefectiveNote("");
+      refresh();
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to mark defective");
+    } finally {
+      setMarkingDefective(false);
     }
   };
 
