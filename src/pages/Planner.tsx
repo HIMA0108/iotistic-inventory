@@ -235,7 +235,6 @@ export default function PlannerPage() {
                       <TableHead className="text-right">Needed</TableHead>
                       <TableHead className="text-right">In stock</TableHead>
                       <TableHead className="text-right">Shortage</TableHead>
-                      <TableHead className="text-right">Est. cost</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -253,9 +252,6 @@ export default function PlannerPage() {
                           ) : (
                             <Badge className="bg-success/15 text-success hover:bg-success/20">OK</Badge>
                           )}
-                        </TableCell>
-                        <TableCell className="text-right text-muted-foreground">
-                          {n.estCost > 0 ? n.estCost.toLocaleString(undefined, { maximumFractionDigits: 2 }) : "—"}
                         </TableCell>
                       </TableRow>
                     ))}
