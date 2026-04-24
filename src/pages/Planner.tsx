@@ -17,7 +17,6 @@ interface ComponentNeed {
   needed: number;
   available: number;
   shortage: number;
-  estCost: number;
 }
 
 interface DeviceNeed {
