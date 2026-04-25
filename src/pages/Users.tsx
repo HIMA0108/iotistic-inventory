@@ -18,7 +18,7 @@ interface UserRow {
 }
 
 export default function UsersPage() {
-  const { role, user } = useAuth();
+  const { role, roleLoaded, user } = useAuth();
   const [rows, setRows] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -49,6 +49,13 @@ export default function UsersPage() {
     refresh();
   }, []);
 
+  if (!roleLoaded) {
+    return (
+      <div className="rounded-2xl border border-border bg-surface-elevated p-8 text-center text-sm text-muted-foreground sm:pl-64">
+        Checking permissions…
+      </div>
+    );
+  }
   if (role !== "admin") return <Navigate to="/" replace />;
 
   const handleAssign = async (userId: string, newRole: "admin" | "staff" | "none") => {
