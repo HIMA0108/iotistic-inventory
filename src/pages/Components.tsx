@@ -219,6 +219,79 @@ export default function ComponentsPage() {
         </div>
       )}
 
+      {/* Adjust stock confirmation dialog */}
+      <Dialog open={!!adjustTarget} onOpenChange={(v) => { if (!v && !adjusting) { setAdjustTarget(null); setAdjustReason(""); } }}>
+        <DialogContent className="max-w-sm">
+          {adjustTarget && (
+            <>
+              <DialogHeader>
+                <DialogTitle>
+                  Confirm stock {adjustDirection === "in" ? "IN" : "OUT"}
+                </DialogTitle>
+                <DialogDescription>
+                  {adjustDirection === "in" ? "Add stock to" : "Remove stock from"}{" "}
+                  <span className="font-semibold text-foreground">{adjustTarget.name}</span>.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3">
+                <div className="rounded-lg bg-secondary p-3 text-xs text-muted-foreground">
+                  Current: <span className="font-semibold text-foreground">{adjustTarget.stock_count}</span>
+                  {" · After: "}
+                  <span className="font-semibold text-foreground">
+                    {adjustDirection === "in"
+                      ? adjustTarget.stock_count + adjustQty
+                      : adjustTarget.stock_count - adjustQty}
+                  </span>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="adj-qty">Quantity</Label>
+                  <Input
+                    id="adj-qty"
+                    type="number"
+                    min={1}
+                    max={adjustDirection === "out" ? adjustTarget.stock_count : undefined}
+                    value={adjustQty}
+                    onChange={(e) => setAdjustQty(Math.max(1, parseInt(e.target.value) || 1))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="adj-reason">
+                    Reason{" "}
+                    {adjustDirection === "out" ? (
+                      <span className="text-destructive">*</span>
+                    ) : (
+                      <span className="text-muted-foreground">(optional)</span>
+                    )}
+                  </Label>
+                  <Textarea
+                    id="adj-reason"
+                    rows={3}
+                    value={adjustReason}
+                    onChange={(e) => setAdjustReason(e.target.value)}
+                    placeholder={adjustDirection === "out" ? "Why is this stock leaving? (required)" : "Add a note (optional)"}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => { setAdjustTarget(null); setAdjustReason(""); }} disabled={adjusting}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={confirmAdjust}
+                  disabled={
+                    adjusting ||
+                    adjustQty < 1 ||
+                    (adjustDirection === "out" && adjustQty > adjustTarget.stock_count)
+                  }
+                >
+                  {adjusting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirm"}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Mark defective dialog */}
       <Dialog open={!!defectiveTarget} onOpenChange={(v) => { if (!v) setDefectiveTarget(null); }}>
         <DialogContent className="max-w-sm">
