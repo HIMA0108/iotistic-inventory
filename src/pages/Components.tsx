@@ -6,7 +6,8 @@ import { uploadComponentImage, rpcAdjustComponent, rpcMarkComponentDefective } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Plus, Package, Pencil, Trash2, Minus, Plus as PlusIcon, ImagePlus, Loader2, AlertTriangle, ShieldAlert } from "lucide-react";
@@ -23,6 +24,13 @@ export default function ComponentsPage() {
   const [defectiveNote, setDefectiveNote] = useState("");
   const [markingDefective, setMarkingDefective] = useState(false);
 
+  // Stock adjust confirmation dialog
+  const [adjustTarget, setAdjustTarget] = useState<Component | null>(null);
+  const [adjustDirection, setAdjustDirection] = useState<"in" | "out">("in");
+  const [adjustQty, setAdjustQty] = useState(1);
+  const [adjustReason, setAdjustReason] = useState("");
+  const [adjusting, setAdjusting] = useState(false);
+
   const isAdmin = role === "admin";
 
   const refresh = async () => {
@@ -35,13 +43,35 @@ export default function ComponentsPage() {
     refresh();
   }, []);
 
-  const handleAdjust = async (c: Component, delta: number) => {
+  const openAdjust = (c: Component, direction: "in" | "out") => {
+    setAdjustTarget(c);
+    setAdjustDirection(direction);
+    setAdjustQty(1);
+    setAdjustReason("");
+  };
+
+  const confirmAdjust = async () => {
+    if (!adjustTarget) return;
+    if (adjustDirection === "out" && adjustReason.trim().length === 0) {
+      toast.error("Reason is required for stock out");
+      return;
+    }
+    setAdjusting(true);
     try {
-      await rpcAdjustComponent(c.id, delta, delta > 0 ? "Stock in" : "Stock out");
-      toast.success(`${c.name}: ${delta > 0 ? "+" : ""}${delta}`);
+      const delta = adjustDirection === "in" ? adjustQty : -adjustQty;
+      await rpcAdjustComponent(
+        adjustTarget.id,
+        delta,
+        adjustReason.trim() || (delta > 0 ? "Stock in" : "Stock out"),
+      );
+      toast.success(`${adjustTarget.name}: ${delta > 0 ? "+" : ""}${delta}`);
+      setAdjustTarget(null);
+      setAdjustReason("");
       refresh();
     } catch (e: any) {
       toast.error(e.message ?? "Failed to adjust");
+    } finally {
+      setAdjusting(false);
     }
   };
 
@@ -154,10 +184,10 @@ export default function ComponentsPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Button size="icon" variant="outline" onClick={() => handleAdjust(c, -1)} aria-label="Decrease">
+                      <Button size="icon" variant="outline" onClick={() => openAdjust(c, "out")} aria-label="Stock out">
                         <Minus className="h-4 w-4" />
                       </Button>
-                      <Button size="icon" variant="default" onClick={() => handleAdjust(c, 1)} aria-label="Increase">
+                      <Button size="icon" variant="default" onClick={() => openAdjust(c, "in")} aria-label="Stock in">
                         <PlusIcon className="h-4 w-4" />
                       </Button>
                       <Button
@@ -188,6 +218,79 @@ export default function ComponentsPage() {
           })}
         </div>
       )}
+
+      {/* Adjust stock confirmation dialog */}
+      <Dialog open={!!adjustTarget} onOpenChange={(v) => { if (!v && !adjusting) { setAdjustTarget(null); setAdjustReason(""); } }}>
+        <DialogContent className="max-w-sm">
+          {adjustTarget && (
+            <>
+              <DialogHeader>
+                <DialogTitle>
+                  Confirm stock {adjustDirection === "in" ? "IN" : "OUT"}
+                </DialogTitle>
+                <DialogDescription>
+                  {adjustDirection === "in" ? "Add stock to" : "Remove stock from"}{" "}
+                  <span className="font-semibold text-foreground">{adjustTarget.name}</span>.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3">
+                <div className="rounded-lg bg-secondary p-3 text-xs text-muted-foreground">
+                  Current: <span className="font-semibold text-foreground">{adjustTarget.stock_count}</span>
+                  {" · After: "}
+                  <span className="font-semibold text-foreground">
+                    {adjustDirection === "in"
+                      ? adjustTarget.stock_count + adjustQty
+                      : adjustTarget.stock_count - adjustQty}
+                  </span>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="adj-qty">Quantity</Label>
+                  <Input
+                    id="adj-qty"
+                    type="number"
+                    min={1}
+                    max={adjustDirection === "out" ? adjustTarget.stock_count : undefined}
+                    value={adjustQty}
+                    onChange={(e) => setAdjustQty(Math.max(1, parseInt(e.target.value) || 1))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="adj-reason">
+                    Reason{" "}
+                    {adjustDirection === "out" ? (
+                      <span className="text-destructive">*</span>
+                    ) : (
+                      <span className="text-muted-foreground">(optional)</span>
+                    )}
+                  </Label>
+                  <Textarea
+                    id="adj-reason"
+                    rows={3}
+                    value={adjustReason}
+                    onChange={(e) => setAdjustReason(e.target.value)}
+                    placeholder={adjustDirection === "out" ? "Why is this stock leaving? (required)" : "Add a note (optional)"}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => { setAdjustTarget(null); setAdjustReason(""); }} disabled={adjusting}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={confirmAdjust}
+                  disabled={
+                    adjusting ||
+                    adjustQty < 1 ||
+                    (adjustDirection === "out" && adjustQty > adjustTarget.stock_count)
+                  }
+                >
+                  {adjusting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirm"}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Mark defective dialog */}
       <Dialog open={!!defectiveTarget} onOpenChange={(v) => { if (!v) setDefectiveTarget(null); }}>

@@ -15,6 +15,8 @@ import LogsPage from "./pages/Logs";
 import NotFound from "./pages/NotFound.tsx";
 import UsersPage from "./pages/Users";
 import PlannerPage from "./pages/Planner";
+import DefectivePage from "./pages/Defective";
+import HistoryPage from "./pages/History";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +43,8 @@ const App = () => (
               <Route path="/logs" element={<LogsPage />} />
               <Route path="/users" element={<UsersPage />} />
               <Route path="/planner" element={<PlannerPage />} />
+              <Route path="/defective" element={<DefectivePage />} />
+              <Route path="/history" element={<HistoryPage />} />
             </Route>
             <Route path="/index" element={<Navigate to="/" replace />} />
             <Route path="*" element={<NotFound />} />

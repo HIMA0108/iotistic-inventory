@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { LayoutDashboard, Package, Cpu, ScanLine, History, LogOut, Wifi, WifiOff, Users, Calculator } from "lucide-react";
+import { LayoutDashboard, Package, Cpu, ScanLine, History, LogOut, Wifi, WifiOff, Users, Calculator, ShieldAlert, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useOnlineStatus } from "@/hooks/useInventoryCache";
 import { cn } from "@/lib/utils";
@@ -16,15 +16,19 @@ export default function AppShell() {
     navigate("/auth", { replace: true });
   };
 
-  const navItems = [
-    { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true, adminOnly: false },
-    { to: "/scan", label: "Scan / In‑Out", icon: ScanLine, adminOnly: false },
-    { to: "/components", label: "Components", icon: Package, adminOnly: false },
-    { to: "/devices", label: "Devices", icon: Cpu, adminOnly: false },
-    { to: "/planner", label: "Planner", icon: Calculator, adminOnly: true },
-    { to: "/logs", label: "Activity", icon: History, adminOnly: false },
-    { to: "/users", label: "Users", icon: Users, adminOnly: true },
-  ].filter((i) => !i.adminOnly || role === "admin");
+  const allNavItems = [
+    { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true, adminOnly: false, mobile: true },
+    { to: "/scan", label: "Scan", icon: ScanLine, adminOnly: false, mobile: true },
+    { to: "/components", label: "Components", icon: Package, adminOnly: false, mobile: true },
+    { to: "/devices", label: "Devices", icon: Cpu, adminOnly: false, mobile: true },
+    { to: "/defective", label: "Defective", icon: ShieldAlert, adminOnly: false, mobile: false },
+    { to: "/planner", label: "Planner", icon: Calculator, adminOnly: true, mobile: false },
+    { to: "/logs", label: "Activity", icon: History, adminOnly: false, mobile: true },
+    { to: "/history", label: "Reports", icon: BarChart3, adminOnly: true, mobile: false },
+    { to: "/users", label: "Users", icon: Users, adminOnly: true, mobile: false },
+  ];
+  const navItems = allNavItems.filter((i) => !i.adminOnly || role === "admin");
+  const mobileNavItems = navItems.filter((i) => i.mobile);
 
   return (
     <div className="min-h-screen bg-gradient-surface">
@@ -71,8 +75,11 @@ export default function AppShell() {
 
       {/* Bottom nav (mobile) */}
       <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-surface-elevated/95 backdrop-blur sm:hidden">
-        <ul className={cn("grid", `grid-cols-${navItems.length}`)} style={{ gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))` }}>
-          {navItems.map((item) => (
+        <ul
+          className="grid"
+          style={{ gridTemplateColumns: `repeat(${mobileNavItems.length}, minmax(0, 1fr))` }}
+        >
+          {mobileNavItems.map((item) => (
             <li key={item.to}>
               <NavLink
                 to={item.to}
