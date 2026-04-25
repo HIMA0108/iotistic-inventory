@@ -18,7 +18,7 @@ interface UserRow {
 }
 
 export default function UsersPage() {
-  const { role, user } = useAuth();
+  const { role, roleLoaded, user } = useAuth();
   const [rows, setRows] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
