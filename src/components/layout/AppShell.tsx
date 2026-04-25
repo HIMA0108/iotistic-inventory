@@ -75,8 +75,11 @@ export default function AppShell() {
 
       {/* Bottom nav (mobile) */}
       <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-surface-elevated/95 backdrop-blur sm:hidden">
-        <ul className={cn("grid", `grid-cols-${navItems.length}`)} style={{ gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))` }}>
-          {navItems.map((item) => (
+        <ul
+          className="grid"
+          style={{ gridTemplateColumns: `repeat(${mobileNavItems.length}, minmax(0, 1fr))` }}
+        >
+          {mobileNavItems.map((item) => (
             <li key={item.to}>
               <NavLink
                 to={item.to}
