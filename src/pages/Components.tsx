@@ -6,7 +6,8 @@ import { uploadComponentImage, rpcAdjustComponent, rpcMarkComponentDefective } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Plus, Package, Pencil, Trash2, Minus, Plus as PlusIcon, ImagePlus, Loader2, AlertTriangle, ShieldAlert } from "lucide-react";
