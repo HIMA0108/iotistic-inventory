@@ -15,6 +15,8 @@ import LogsPage from "./pages/Logs";
 import NotFound from "./pages/NotFound.tsx";
 import UsersPage from "./pages/Users";
 import PlannerPage from "./pages/Planner";
+import DefectivePage from "./pages/Defective";
+import HistoryPage from "./pages/History";
 
 const queryClient = new QueryClient();
 
