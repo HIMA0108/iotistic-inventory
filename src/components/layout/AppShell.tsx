@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { LayoutDashboard, Package, Cpu, ScanLine, History, LogOut, Wifi, WifiOff, Users, Calculator } from "lucide-react";
+import { LayoutDashboard, Package, Cpu, ScanLine, History, LogOut, Wifi, WifiOff, Users, Calculator, ShieldAlert, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useOnlineStatus } from "@/hooks/useInventoryCache";
 import { cn } from "@/lib/utils";
