@@ -43,13 +43,35 @@ export default function ComponentsPage() {
     refresh();
   }, []);
 
-  const handleAdjust = async (c: Component, delta: number) => {
+  const openAdjust = (c: Component, direction: "in" | "out") => {
+    setAdjustTarget(c);
+    setAdjustDirection(direction);
+    setAdjustQty(1);
+    setAdjustReason("");
+  };
+
+  const confirmAdjust = async () => {
+    if (!adjustTarget) return;
+    if (adjustDirection === "out" && adjustReason.trim().length === 0) {
+      toast.error("Reason is required for stock out");
+      return;
+    }
+    setAdjusting(true);
     try {
-      await rpcAdjustComponent(c.id, delta, delta > 0 ? "Stock in" : "Stock out");
-      toast.success(`${c.name}: ${delta > 0 ? "+" : ""}${delta}`);
+      const delta = adjustDirection === "in" ? adjustQty : -adjustQty;
+      await rpcAdjustComponent(
+        adjustTarget.id,
+        delta,
+        adjustReason.trim() || (delta > 0 ? "Stock in" : "Stock out"),
+      );
+      toast.success(`${adjustTarget.name}: ${delta > 0 ? "+" : ""}${delta}`);
+      setAdjustTarget(null);
+      setAdjustReason("");
       refresh();
     } catch (e: any) {
       toast.error(e.message ?? "Failed to adjust");
+    } finally {
+      setAdjusting(false);
     }
   };
 
