@@ -24,6 +24,13 @@ export default function ComponentsPage() {
   const [defectiveNote, setDefectiveNote] = useState("");
   const [markingDefective, setMarkingDefective] = useState(false);
 
+  // Stock adjust confirmation dialog
+  const [adjustTarget, setAdjustTarget] = useState<Component | null>(null);
+  const [adjustDirection, setAdjustDirection] = useState<"in" | "out">("in");
+  const [adjustQty, setAdjustQty] = useState(1);
+  const [adjustReason, setAdjustReason] = useState("");
+  const [adjusting, setAdjusting] = useState(false);
+
   const isAdmin = role === "admin";
 
   const refresh = async () => {
