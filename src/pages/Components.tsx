@@ -184,10 +184,10 @@ export default function ComponentsPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Button size="icon" variant="outline" onClick={() => handleAdjust(c, -1)} aria-label="Decrease">
+                      <Button size="icon" variant="outline" onClick={() => openAdjust(c, "out")} aria-label="Stock out">
                         <Minus className="h-4 w-4" />
                       </Button>
-                      <Button size="icon" variant="default" onClick={() => handleAdjust(c, 1)} aria-label="Increase">
+                      <Button size="icon" variant="default" onClick={() => openAdjust(c, "in")} aria-label="Stock in">
                         <PlusIcon className="h-4 w-4" />
                       </Button>
                       <Button
