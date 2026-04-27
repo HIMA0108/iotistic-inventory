@@ -255,6 +255,7 @@ export type Database = {
         Row: {
           company_id: string
           created_at: string
+          display_title: string | null
           email: string | null
           full_name: string | null
           id: string
@@ -262,6 +263,7 @@ export type Database = {
         Insert: {
           company_id: string
           created_at?: string
+          display_title?: string | null
           email?: string | null
           full_name?: string | null
           id: string
@@ -269,6 +271,7 @@ export type Database = {
         Update: {
           company_id?: string
           created_at?: string
+          display_title?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
@@ -360,7 +363,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "staff"
+      app_role: "admin" | "staff" | "manager"
       log_action: "in" | "out" | "assemble" | "deliver" | "adjust" | "defective"
       log_item_type: "component" | "device"
     }
@@ -490,7 +493,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "staff"],
+      app_role: ["admin", "staff", "manager"],
       log_action: ["in", "out", "assemble", "deliver", "adjust", "defective"],
       log_item_type: ["component", "device"],
     },
