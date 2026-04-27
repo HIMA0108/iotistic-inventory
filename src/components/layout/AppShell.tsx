@@ -1,13 +1,13 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { LayoutDashboard, Package, Cpu, ScanLine, History, LogOut, Wifi, WifiOff, Users, Calculator, ShieldAlert, BarChart3 } from "lucide-react";
+import { LayoutDashboard, Package, Cpu, ScanLine, History, LogOut, Wifi, WifiOff, Users, Calculator, ShieldAlert, BarChart3, FileText, CalendarDays, Sparkles, LineChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useOnlineStatus } from "@/hooks/useInventoryCache";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/iotistic-logo.png";
 
 export default function AppShell() {
-  const { user, role, signOut } = useAuth();
+  const { user, role, isAdmin, isManager, displayTitle, fullName, signOut } = useAuth();
   const navigate = useNavigate();
   const online = useOnlineStatus();
 
@@ -17,17 +17,21 @@ export default function AppShell() {
   };
 
   const allNavItems = [
-    { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true, adminOnly: false, mobile: true },
-    { to: "/scan", label: "Scan", icon: ScanLine, adminOnly: false, mobile: true },
-    { to: "/components", label: "Components", icon: Package, adminOnly: false, mobile: true },
-    { to: "/devices", label: "Devices", icon: Cpu, adminOnly: false, mobile: true },
-    { to: "/defective", label: "Defective", icon: ShieldAlert, adminOnly: false, mobile: false },
-    { to: "/planner", label: "Planner", icon: Calculator, adminOnly: true, mobile: false },
-    { to: "/logs", label: "Activity", icon: History, adminOnly: false, mobile: true },
-    { to: "/history", label: "Reports", icon: BarChart3, adminOnly: true, mobile: false },
-    { to: "/users", label: "Users", icon: Users, adminOnly: true, mobile: false },
+    { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true, show: true, mobile: true },
+    { to: "/scan", label: "Scan", icon: ScanLine, show: true, mobile: true },
+    { to: "/components", label: "Components", icon: Package, show: true, mobile: true },
+    { to: "/devices", label: "Devices", icon: Cpu, show: true, mobile: true },
+    { to: "/reports", label: "My report", icon: FileText, show: true, mobile: true },
+    { to: "/leaves", label: "Leaves", icon: CalendarDays, show: true, mobile: false },
+    { to: "/defective", label: "Defective", icon: ShieldAlert, show: true, mobile: false },
+    { to: "/planner", label: "Planner", icon: Calculator, show: isAdmin, mobile: false },
+    { to: "/logs", label: "Activity", icon: History, show: true, mobile: true },
+    { to: "/history", label: "Inv. report", icon: BarChart3, show: isAdmin, mobile: false },
+    { to: "/work-tracking", label: "Work tracking", icon: LineChart, show: isManager, mobile: false },
+    { to: "/ai-reports", label: "AI reports", icon: Sparkles, show: isManager, mobile: false },
+    { to: "/users", label: "Users", icon: Users, show: isAdmin, mobile: false },
   ];
-  const navItems = allNavItems.filter((i) => !i.adminOnly || role === "admin");
+  const navItems = allNavItems.filter((i) => i.show);
   const mobileNavItems = navItems.filter((i) => i.mobile);
 
   return (
@@ -55,12 +59,12 @@ export default function AppShell() {
               {online ? <Wifi className="h-3.5 w-3.5" /> : <WifiOff className="h-3.5 w-3.5" />}
               {online ? "Online" : "Offline"}
             </div>
-            {role && (
-              <span className="hidden rounded-full bg-primary-container px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-primary-container-foreground sm:inline">
-                {role}
+            {(displayTitle || role) && (
+              <span className="hidden rounded-full bg-primary-container px-2.5 py-1 text-xs font-semibold tracking-wide text-primary-container-foreground sm:inline">
+                {displayTitle ?? (role ? role.toUpperCase() : "")}
               </span>
             )}
-            <span className="hidden text-xs text-muted-foreground md:inline">{user?.email}</span>
+            <span className="hidden text-xs text-muted-foreground md:inline">{fullName ?? user?.email}</span>
             <Button variant="ghost" size="sm" onClick={handleSignOut} aria-label="Sign out">
               <LogOut className="h-4 w-4" />
             </Button>

@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import AuthGuard from "@/components/auth/AuthGuard";
+import ComplianceGate from "@/components/auth/ComplianceGate";
 import AppShell from "@/components/layout/AppShell";
 import AuthPage from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -17,6 +18,10 @@ import UsersPage from "./pages/Users";
 import PlannerPage from "./pages/Planner";
 import DefectivePage from "./pages/Defective";
 import HistoryPage from "./pages/History";
+import DailyReportsPage from "./pages/DailyReports";
+import LeavesPage from "./pages/Leaves";
+import WorkTrackingPage from "./pages/WorkTracking";
+import SystemReportsPage from "./pages/SystemReports";
 
 const queryClient = new QueryClient();
 
@@ -32,7 +37,9 @@ const App = () => (
             <Route
               element={
                 <AuthGuard>
-                  <AppShell />
+                  <ComplianceGate>
+                    <AppShell />
+                  </ComplianceGate>
                 </AuthGuard>
               }
             >
@@ -45,6 +52,10 @@ const App = () => (
               <Route path="/planner" element={<PlannerPage />} />
               <Route path="/defective" element={<DefectivePage />} />
               <Route path="/history" element={<HistoryPage />} />
+              <Route path="/reports" element={<DailyReportsPage />} />
+              <Route path="/leaves" element={<LeavesPage />} />
+              <Route path="/work-tracking" element={<WorkTrackingPage />} />
+              <Route path="/ai-reports" element={<SystemReportsPage />} />
             </Route>
             <Route path="/index" element={<Navigate to="/" replace />} />
             <Route path="*" element={<NotFound />} />
