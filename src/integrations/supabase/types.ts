@@ -85,6 +85,39 @@ export type Database = {
           },
         ]
       }
+      daily_reports: {
+        Row: {
+          company_id: string
+          edited_at: string | null
+          edited_by: string | null
+          id: string
+          notes: string | null
+          report_date: string
+          submitted_at: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          edited_at?: string | null
+          edited_by?: string | null
+          id?: string
+          notes?: string | null
+          report_date: string
+          submitted_at?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          edited_at?: string | null
+          edited_by?: string | null
+          id?: string
+          notes?: string | null
+          report_date?: string
+          submitted_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       device_dependencies: {
         Row: {
           depends_on_device_id: string
@@ -251,10 +284,53 @@ export type Database = {
           },
         ]
       }
+      leave_requests: {
+        Row: {
+          company_id: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          end_date: string
+          id: string
+          leave_type: Database["public"]["Enums"]["leave_type"]
+          reason: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["leave_status"]
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          end_date: string
+          id?: string
+          leave_type: Database["public"]["Enums"]["leave_type"]
+          reason?: string | null
+          start_date: string
+          status?: Database["public"]["Enums"]["leave_status"]
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          end_date?: string
+          id?: string
+          leave_type?: Database["public"]["Enums"]["leave_type"]
+          reason?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["leave_status"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           company_id: string
           created_at: string
+          display_title: string | null
           email: string | null
           full_name: string | null
           id: string
@@ -262,6 +338,7 @@ export type Database = {
         Insert: {
           company_id: string
           created_at?: string
+          display_title?: string | null
           email?: string | null
           full_name?: string | null
           id: string
@@ -269,6 +346,7 @@ export type Database = {
         Update: {
           company_id?: string
           created_at?: string
+          display_title?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
@@ -282,6 +360,150 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      report_tasks: {
+        Row: {
+          created_at: string
+          id: string
+          quantity: number | null
+          report_id: string
+          task_name: string
+          template_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          quantity?: number | null
+          report_id: string
+          task_name: string
+          template_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          quantity?: number | null
+          report_id?: string
+          task_name?: string
+          template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_tasks_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "daily_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_tasks_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "task_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      system_notifications: {
+        Row: {
+          body: string | null
+          company_id: string
+          created_at: string
+          id: string
+          is_read: boolean
+          link: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      system_reports: {
+        Row: {
+          company_id: string
+          created_at: string
+          file_url: string | null
+          generated_at: string | null
+          id: string
+          metadata: Json | null
+          period_end: string
+          period_start: string
+          report_type: Database["public"]["Enums"]["system_report_type"]
+          status: Database["public"]["Enums"]["system_report_status"]
+          title: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          file_url?: string | null
+          generated_at?: string | null
+          id?: string
+          metadata?: Json | null
+          period_end: string
+          period_start: string
+          report_type: Database["public"]["Enums"]["system_report_type"]
+          status?: Database["public"]["Enums"]["system_report_status"]
+          title?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          file_url?: string | null
+          generated_at?: string | null
+          id?: string
+          metadata?: Json | null
+          period_end?: string
+          period_start?: string
+          report_type?: Database["public"]["Enums"]["system_report_type"]
+          status?: Database["public"]["Enums"]["system_report_status"]
+          title?: string | null
+        }
+        Relationships: []
+      }
+      task_templates: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
@@ -329,6 +551,10 @@ export type Database = {
         Returns: undefined
       }
       build_capacity: { Args: { _device_id: string }; Returns: number }
+      decide_leave_request: {
+        Args: { _approve: boolean; _request_id: string }
+        Returns: undefined
+      }
       deliver_device: {
         Args: { _device_id: string; _note?: string; _qty: number }
         Returns: undefined
@@ -342,13 +568,37 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_role_in_company: {
+        Args: {
+          _company_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       is_admin_of: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_manager_of: {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
       }
       mark_component_defective: {
         Args: { _component_id: string; _note?: string; _qty: number }
         Returns: undefined
+      }
+      missing_report_users_for_date: {
+        Args: { _company_id: string; _date: string }
+        Returns: {
+          email: string
+          full_name: string
+          user_id: string
+        }[]
+      }
+      previous_working_day: {
+        Args: { _from?: string; _user_id: string }
+        Returns: string
       }
       remove_user_role: { Args: { _user_id: string }; Returns: undefined }
       set_user_role: {
@@ -358,11 +608,23 @@ export type Database = {
         }
         Returns: undefined
       }
+      should_submit_report_for_date: {
+        Args: { _date: string; _user_id: string }
+        Returns: boolean
+      }
+      submit_daily_report: {
+        Args: { _notes: string; _report_date: string; _tasks: Json }
+        Returns: string
+      }
     }
     Enums: {
-      app_role: "admin" | "staff"
+      app_role: "admin" | "staff" | "manager"
+      leave_status: "pending" | "approved" | "rejected"
+      leave_type: "annual" | "off_day" | "sick"
       log_action: "in" | "out" | "assemble" | "deliver" | "adjust" | "defective"
       log_item_type: "component" | "device"
+      system_report_status: "pending" | "ready" | "failed"
+      system_report_type: "monthly" | "quarterly" | "biannual" | "annual"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -490,9 +752,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "staff"],
+      app_role: ["admin", "staff", "manager"],
+      leave_status: ["pending", "approved", "rejected"],
+      leave_type: ["annual", "off_day", "sick"],
       log_action: ["in", "out", "assemble", "deliver", "adjust", "defective"],
       log_item_type: ["component", "device"],
+      system_report_status: ["pending", "ready", "failed"],
+      system_report_type: ["monthly", "quarterly", "biannual", "annual"],
     },
   },
 } as const
