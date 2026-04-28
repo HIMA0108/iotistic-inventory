@@ -252,7 +252,14 @@ export default function LogsPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <span className="truncate font-medium">{log.item_name}</span>
-                        <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase text-secondary-foreground">
+                        <span
+                          className={cn(
+                            "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase",
+                            log.item_type === "device"
+                              ? "bg-primary/15 text-primary"
+                              : "bg-success/15 text-success",
+                          )}
+                        >
                           {log.item_type}
                         </span>
                       </div>
