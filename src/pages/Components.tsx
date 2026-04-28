@@ -201,7 +201,7 @@ export default function ComponentsPage() {
                       <Button
                         size="icon"
                         variant="ghost"
-                        onClick={() => { setDefectiveTarget(c); setDefectiveQty(1); setDefectiveNote(""); }}
+                        onClick={() => { setDefectiveTarget(c); setDefectiveQty(null); setDefectiveNote(""); }}
                         aria-label="Mark defective"
                         title="Mark as defective"
                         disabled={c.stock_count === 0}
@@ -244,12 +244,16 @@ export default function ComponentsPage() {
               <div className="space-y-3">
                 <div className="rounded-lg bg-secondary p-3 text-xs text-muted-foreground">
                   Current: <span className="font-semibold text-foreground">{adjustTarget.stock_count}</span>
-                  {" · After: "}
-                  <span className="font-semibold text-foreground">
-                    {adjustDirection === "in"
-                      ? adjustTarget.stock_count + adjustQty
-                      : adjustTarget.stock_count - adjustQty}
-                  </span>
+                  {adjustQty && adjustQty > 0 && (
+                    <>
+                      {" · After: "}
+                      <span className="font-semibold text-foreground">
+                        {adjustDirection === "in"
+                          ? adjustTarget.stock_count + adjustQty
+                          : adjustTarget.stock_count - adjustQty}
+                      </span>
+                    </>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="adj-qty">Quantity</Label>
@@ -258,8 +262,12 @@ export default function ComponentsPage() {
                     type="number"
                     min={1}
                     max={adjustDirection === "out" ? adjustTarget.stock_count : undefined}
-                    value={adjustQty}
-                    onChange={(e) => setAdjustQty(Math.max(1, parseInt(e.target.value) || 1))}
+                    placeholder="Enter quantity"
+                    value={adjustQty ?? ""}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setAdjustQty(v === "" ? null : Math.max(1, parseInt(v) || 1));
+                    }}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -288,6 +296,7 @@ export default function ComponentsPage() {
                   onClick={confirmAdjust}
                   disabled={
                     adjusting ||
+                    !adjustQty ||
                     adjustQty < 1 ||
                     (adjustDirection === "out" && adjustQty > adjustTarget.stock_count)
                   }
@@ -324,8 +333,12 @@ export default function ComponentsPage() {
                   type="number"
                   min={1}
                   max={defectiveTarget.stock_count}
-                  value={defectiveQty}
-                  onChange={(e) => setDefectiveQty(Math.max(1, parseInt(e.target.value) || 1))}
+                  placeholder="Enter quantity"
+                  value={defectiveQty ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setDefectiveQty(v === "" ? null : Math.max(1, parseInt(v) || 1));
+                  }}
                 />
               </div>
               <div className="space-y-1.5">
@@ -342,7 +355,7 @@ export default function ComponentsPage() {
                 <Button
                   variant="destructive"
                   onClick={handleMarkDefective}
-                  disabled={markingDefective || defectiveQty < 1 || defectiveQty > defectiveTarget.stock_count}
+                  disabled={markingDefective || !defectiveQty || defectiveQty < 1 || defectiveQty > defectiveTarget.stock_count}
                 >
                   {markingDefective ? <Loader2 className="h-4 w-4 animate-spin" /> : "Mark defective"}
                 </Button>
