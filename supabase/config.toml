@@ -1,1 +1,4 @@
 project_id = "sycwraeamscnwhwjrhlw"
+
+[functions.n8n-incoming-receiver]
+verify_jwt = false

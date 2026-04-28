@@ -64,7 +64,7 @@ export default function ScanPage() {
   const [scanning, setScanning] = useState(false);
   const [query, setQuery] = useState("");
   const [match, setMatch] = useState<Match>(null);
-  const [qty, setQty] = useState<number>(1);
+  const [qty, setQty] = useState<number | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
 
   // Confirmation dialog state
@@ -119,12 +119,16 @@ export default function ScanPage() {
 
   const openConfirm = (kind: ActionKind) => {
     if (!match) return;
+    if (!qty || qty < 1) {
+      toast.error("Enter a quantity first");
+      return;
+    }
     setReason("");
     setPendingAction(kind);
   };
 
   const confirmAction = async () => {
-    if (!match || !pendingAction) return;
+    if (!match || !pendingAction || !qty || qty < 1) return;
     const meta = ACTION_META[pendingAction];
     if (meta.needsReason && reason.trim().length === 0) {
       toast.error("Reason is required");
@@ -329,22 +333,26 @@ export default function ScanPage() {
                 variant="outline"
                 size="icon"
                 className="h-12 w-12"
-                onClick={() => setQty(Math.max(1, qty - 1))}
+                onClick={() => setQty(Math.max(1, (qty ?? 1) - 1))}
               >
                 <Minus className="h-5 w-5" />
               </Button>
               <Input
                 type="number"
                 min={1}
-                value={qty}
-                onChange={(e) => setQty(Math.max(1, parseInt(e.target.value) || 1))}
+                placeholder="Qty"
+                value={qty ?? ""}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setQty(v === "" ? null : Math.max(1, parseInt(v) || 1));
+                }}
                 className="h-14 w-28 rounded-2xl border-border bg-secondary text-center text-3xl font-bold tabular-nums"
               />
               <Button
                 variant="outline"
                 size="icon"
                 className="h-12 w-12"
-                onClick={() => setQty(qty + 1)}
+                onClick={() => setQty((qty ?? 0) + 1)}
               >
                 <Plus className="h-5 w-5" />
               </Button>
@@ -353,38 +361,40 @@ export default function ScanPage() {
             <div className="grid grid-cols-2 gap-3">
               {match.type === "component" ? (
                 <>
+                  {/* Red — Stock OUT on the LEFT */}
                   <Button
                     size="lg"
-                    variant="secondary"
-                    className="h-16 gap-2 text-base font-bold"
-                    onClick={() => openConfirm("in")}
-                  >
-                    <Plus className="h-5 w-5" /> Stock IN
-                  </Button>
-                  <Button
-                    size="lg"
-                    className="h-16 gap-2 text-base font-bold"
+                    className="h-16 gap-2 bg-destructive text-base font-bold text-destructive-foreground hover:bg-destructive/90"
                     onClick={() => openConfirm("out")}
                   >
                     <Minus className="h-5 w-5" /> Stock OUT
                   </Button>
+                  {/* Blue — Stock IN on the RIGHT */}
+                  <Button
+                    size="lg"
+                    className="h-16 gap-2 bg-primary text-base font-bold text-primary-foreground hover:bg-primary/90"
+                    onClick={() => openConfirm("in")}
+                  >
+                    <Plus className="h-5 w-5" /> Stock IN
+                  </Button>
                 </>
               ) : (
                 <>
+                  {/* Red — Deliver (stock out) on the LEFT */}
                   <Button
                     size="lg"
-                    variant="secondary"
-                    className="h-16 gap-2 text-base font-bold"
-                    onClick={() => openConfirm("assemble")}
-                  >
-                    <Hammer className="h-5 w-5" /> Assemble
-                  </Button>
-                  <Button
-                    size="lg"
-                    className="h-16 gap-2 text-base font-bold"
+                    className="h-16 gap-2 bg-destructive text-base font-bold text-destructive-foreground hover:bg-destructive/90"
                     onClick={() => openConfirm("deliver")}
                   >
                     <Truck className="h-5 w-5" /> Deliver
+                  </Button>
+                  {/* Blue — Assemble (stock in) on the RIGHT */}
+                  <Button
+                    size="lg"
+                    className="h-16 gap-2 bg-primary text-base font-bold text-primary-foreground hover:bg-primary/90"
+                    onClick={() => openConfirm("assemble")}
+                  >
+                    <Hammer className="h-5 w-5" /> Assemble
                   </Button>
                 </>
               )}

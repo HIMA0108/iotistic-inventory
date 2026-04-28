@@ -1,32 +1,43 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { rpcSetUserRole, rpcRemoveUserRole } from "@/services/supabase/inventory";
+import { setUserRoles, rpcRemoveUserRole } from "@/services/supabase/inventory";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Users as UsersIcon, ShieldCheck, UserX, Clock } from "lucide-react";
+import { Users as UsersIcon, ShieldCheck, Clock, Pencil, Loader2 } from "lucide-react";
 import { Navigate } from "react-router-dom";
+import type { AppRole } from "@/types";
 
 interface UserRow {
   id: string;
   email: string | null;
   full_name: string | null;
+  display_title: string | null;
   created_at: string;
-  role: "admin" | "staff" | null;
+  roles: AppRole[];
 }
 
 export default function UsersPage() {
   const { role, roleLoaded, user } = useAuth();
   const [rows, setRows] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const [editing, setEditing] = useState<UserRow | null>(null);
 
   const refresh = async () => {
     const { data: profiles, error } = await supabase
       .from("profiles")
-      .select("id, email, full_name, created_at")
+      .select("id, email, full_name, display_title, created_at")
       .order("created_at", { ascending: false });
     if (error) {
       toast.error(error.message);
@@ -34,13 +45,17 @@ export default function UsersPage() {
       return;
     }
     const { data: roles } = await supabase.from("user_roles").select("user_id, role");
-    const roleMap = new Map<string, "admin" | "staff">();
-    roles?.forEach((r: any) => roleMap.set(r.user_id, r.role));
+    const roleMap = new Map<string, AppRole[]>();
+    roles?.forEach((r: any) => {
+      const list = roleMap.get(r.user_id) ?? [];
+      list.push(r.role);
+      roleMap.set(r.user_id, list);
+    });
     setRows(
       (profiles ?? []).map((p: any) => ({
         ...p,
-        role: roleMap.get(p.id) ?? null,
-      }))
+        roles: roleMap.get(p.id) ?? [],
+      })),
     );
     setLoading(false);
   };
@@ -58,28 +73,16 @@ export default function UsersPage() {
   }
   if (role !== "admin") return <Navigate to="/" replace />;
 
-  const handleAssign = async (userId: string, newRole: "admin" | "staff" | "none") => {
-    setBusyId(userId);
-    try {
-      if (newRole === "none") await rpcRemoveUserRole(userId);
-      else await rpcSetUserRole(userId, newRole);
-      toast.success("Role updated");
-      await refresh();
-    } catch (e: any) {
-      toast.error(e.message ?? "Failed to update role");
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  const pending = rows.filter((r) => !r.role);
-  const active = rows.filter((r) => r.role);
+  const pending = rows.filter((r) => r.roles.length === 0);
+  const active = rows.filter((r) => r.roles.length > 0);
 
   return (
     <div className="space-y-6 sm:pl-64">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Users</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Approve new signups and manage team roles.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Approve new signups, assign one or more roles, and set job titles.
+        </p>
       </header>
 
       {loading ? (
@@ -102,13 +105,7 @@ export default function UsersPage() {
             ) : (
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 {pending.map((u) => (
-                  <UserCard
-                    key={u.id}
-                    u={u}
-                    isSelf={u.id === user?.id}
-                    busy={busyId === u.id}
-                    onAssign={handleAssign}
-                  />
+                  <UserCard key={u.id} u={u} isSelf={u.id === user?.id} onEdit={() => setEditing(u)} />
                 ))}
               </div>
             )}
@@ -123,32 +120,47 @@ export default function UsersPage() {
             </div>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               {active.map((u) => (
-                <UserCard
-                  key={u.id}
-                  u={u}
-                  isSelf={u.id === user?.id}
-                  busy={busyId === u.id}
-                  onAssign={handleAssign}
-                />
+                <UserCard key={u.id} u={u} isSelf={u.id === user?.id} onEdit={() => setEditing(u)} />
               ))}
             </div>
           </section>
         </>
       )}
+
+      <EditUserDialog
+        user={editing}
+        onClose={() => setEditing(null)}
+        onSaved={() => {
+          setEditing(null);
+          refresh();
+        }}
+      />
     </div>
+  );
+}
+
+function roleBadge(r: AppRole) {
+  const cls =
+    r === "admin"
+      ? "bg-primary/15 text-primary"
+      : r === "manager"
+        ? "bg-accent/20 text-accent"
+        : "bg-success/15 text-success";
+  return (
+    <span key={r} className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${cls}`}>
+      {r}
+    </span>
   );
 }
 
 function UserCard({
   u,
   isSelf,
-  busy,
-  onAssign,
+  onEdit,
 }: {
   u: UserRow;
   isSelf: boolean;
-  busy: boolean;
-  onAssign: (id: string, role: "admin" | "staff" | "none") => void;
+  onEdit: () => void;
 }) {
   return (
     <Card className="shadow-elevation-1">
@@ -159,24 +171,124 @@ function UserCard({
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-semibold">{u.full_name || u.email || "Unnamed"}</div>
           <div className="truncate text-xs text-muted-foreground">{u.email}</div>
+          {u.display_title && (
+            <div className="mt-0.5 truncate text-[11px] italic text-muted-foreground">{u.display_title}</div>
+          )}
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {u.roles.length === 0 ? (
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground">
+                pending
+              </span>
+            ) : (
+              u.roles.map(roleBadge)
+            )}
+          </div>
         </div>
-        <Select
-          value={u.role ?? "none"}
-          onValueChange={(v) => onAssign(u.id, v as any)}
-          disabled={busy || isSelf}
-        >
-          <SelectTrigger className="w-32">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">
-              <span className="inline-flex items-center gap-1.5"><UserX className="h-3.5 w-3.5" /> No access</span>
-            </SelectItem>
-            <SelectItem value="staff">Staff</SelectItem>
-            <SelectItem value="admin">Admin</SelectItem>
-          </SelectContent>
-        </Select>
+        <Button variant="outline" size="sm" onClick={onEdit} disabled={isSelf} title={isSelf ? "Can't edit yourself" : "Edit user"}>
+          <Pencil className="h-4 w-4" />
+        </Button>
       </CardContent>
     </Card>
+  );
+}
+
+const ALL_ROLES: AppRole[] = ["admin", "manager", "staff"];
+
+function EditUserDialog({
+  user,
+  onClose,
+  onSaved,
+}: {
+  user: UserRow | null;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [roles, setRolesState] = useState<AppRole[]>([]);
+  const [title, setTitle] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setRolesState([...user.roles]);
+      setTitle(user.display_title ?? "");
+    }
+  }, [user]);
+
+  if (!user) return null;
+
+  const toggle = (r: AppRole) => {
+    setRolesState((prev) => (prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      // Update display_title
+      const { error: pErr } = await supabase
+        .from("profiles")
+        .update({ display_title: title.trim() || null })
+        .eq("id", user.id);
+      if (pErr) throw pErr;
+
+      // Update roles
+      if (roles.length === 0) {
+        await rpcRemoveUserRole(user.id);
+      } else {
+        await setUserRoles(user.id, roles);
+      }
+      toast.success("User updated");
+      onSaved();
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to update user");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={!!user} onOpenChange={(v) => !v && !saving && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit {user.full_name || user.email}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="title">Display title</Label>
+            <Input
+              id="title"
+              placeholder="e.g. QC Specialist"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+            <p className="text-[11px] text-muted-foreground">Shown in the header instead of the role.</p>
+          </div>
+          <div className="space-y-2">
+            <Label>Roles</Label>
+            <div className="space-y-2 rounded-lg border border-border p-3">
+              {ALL_ROLES.map((r) => (
+                <label key={r} className="flex cursor-pointer items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={roles.includes(r)}
+                    onCheckedChange={() => toggle(r)}
+                  />
+                  <span className="font-medium capitalize">{r}</span>
+                </label>
+              ))}
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Users can have multiple roles (e.g. Admin + Staff). Leaving all unchecked sets the user back to "pending".
+            </p>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={saving}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
