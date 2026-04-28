@@ -64,7 +64,7 @@ export default function ScanPage() {
   const [scanning, setScanning] = useState(false);
   const [query, setQuery] = useState("");
   const [match, setMatch] = useState<Match>(null);
-  const [qty, setQty] = useState<number>(1);
+  const [qty, setQty] = useState<number | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
 
   // Confirmation dialog state
@@ -119,12 +119,16 @@ export default function ScanPage() {
 
   const openConfirm = (kind: ActionKind) => {
     if (!match) return;
+    if (!qty || qty < 1) {
+      toast.error("Enter a quantity first");
+      return;
+    }
     setReason("");
     setPendingAction(kind);
   };
 
   const confirmAction = async () => {
-    if (!match || !pendingAction) return;
+    if (!match || !pendingAction || !qty || qty < 1) return;
     const meta = ACTION_META[pendingAction];
     if (meta.needsReason && reason.trim().length === 0) {
       toast.error("Reason is required");
