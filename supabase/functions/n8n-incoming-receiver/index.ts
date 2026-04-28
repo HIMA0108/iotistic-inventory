@@ -1,10 +1,33 @@
 // Receives the processed file URL back from n8n and notifies managers.
+// Public endpoint (verify_jwt = false) — auth is enforced via a shared secret
+// that n8n must send in the `x-callback-secret` header (or `Authorization: Bearer <secret>`).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-callback-secret",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-callback-secret",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+/** Constant-time string compare to prevent timing attacks. */
+function safeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  const enc = new TextEncoder();
+  const ab = enc.encode(a);
+  const bb = enc.encode(b);
+  let diff = 0;
+  for (let i = 0; i < ab.length; i++) diff |= ab[i] ^ bb[i];
+  return diff === 0;
+}
+
+function extractSecret(req: Request): string | null {
+  const direct = req.headers.get("x-callback-secret");
+  if (direct) return direct.trim();
+  const auth = req.headers.get("authorization");
+  if (auth?.toLowerCase().startsWith("bearer ")) return auth.slice(7).trim();
+  return null;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -16,13 +39,23 @@ Deno.serve(async (req) => {
   }
 
   const expectedSecret = Deno.env.get("N8N_INCOMING_SECRET");
-  const provided = req.headers.get("x-callback-secret");
-  if (!expectedSecret || provided !== expectedSecret) {
+  if (!expectedSecret) {
+    console.error("N8N_INCOMING_SECRET is not configured");
+    return new Response(JSON.stringify({ error: "Server misconfigured" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const provided = extractSecret(req);
+  if (!provided || !safeEqual(provided, expectedSecret)) {
+    console.warn("n8n-incoming-receiver: rejected request — bad/missing secret");
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
+
 
   let body: any;
   try {
