@@ -20,14 +20,14 @@ export default function ComponentsPage() {
   const [editing, setEditing] = useState<Component | null>(null);
   const [open, setOpen] = useState(false);
   const [defectiveTarget, setDefectiveTarget] = useState<Component | null>(null);
-  const [defectiveQty, setDefectiveQty] = useState(1);
+  const [defectiveQty, setDefectiveQty] = useState<number | null>(null);
   const [defectiveNote, setDefectiveNote] = useState("");
   const [markingDefective, setMarkingDefective] = useState(false);
 
   // Stock adjust confirmation dialog
   const [adjustTarget, setAdjustTarget] = useState<Component | null>(null);
   const [adjustDirection, setAdjustDirection] = useState<"in" | "out">("in");
-  const [adjustQty, setAdjustQty] = useState(1);
+  const [adjustQty, setAdjustQty] = useState<number | null>(null);
   const [adjustReason, setAdjustReason] = useState("");
   const [adjusting, setAdjusting] = useState(false);
 
@@ -46,12 +46,16 @@ export default function ComponentsPage() {
   const openAdjust = (c: Component, direction: "in" | "out") => {
     setAdjustTarget(c);
     setAdjustDirection(direction);
-    setAdjustQty(1);
+    setAdjustQty(null);
     setAdjustReason("");
   };
 
   const confirmAdjust = async () => {
     if (!adjustTarget) return;
+    if (!adjustQty || adjustQty < 1) {
+      toast.error("Enter a quantity");
+      return;
+    }
     if (adjustDirection === "out" && adjustReason.trim().length === 0) {
       toast.error("Reason is required for stock out");
       return;
@@ -87,12 +91,16 @@ export default function ComponentsPage() {
 
   const handleMarkDefective = async () => {
     if (!defectiveTarget) return;
+    if (!defectiveQty || defectiveQty < 1) {
+      toast.error("Enter a quantity");
+      return;
+    }
     setMarkingDefective(true);
     try {
       await rpcMarkComponentDefective(defectiveTarget.id, defectiveQty, defectiveNote || undefined);
       toast.success(`${defectiveQty} marked defective`);
       setDefectiveTarget(null);
-      setDefectiveQty(1);
+      setDefectiveQty(null);
       setDefectiveNote("");
       refresh();
     } catch (e: any) {
