@@ -6,8 +6,27 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function safeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  const enc = new TextEncoder();
+  const ab = enc.encode(a), bb = enc.encode(b);
+  let diff = 0;
+  for (let i = 0; i < ab.length; i++) diff |= ab[i] ^ bb[i];
+  return diff === 0;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  // Cron-only: require shared secret to prevent abuse by authenticated users
+  const expected = Deno.env.get("CRON_SECRET");
+  const provided = req.headers.get("x-cron-secret") ?? "";
+  if (!expected || !safeEqual(provided, expected)) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
