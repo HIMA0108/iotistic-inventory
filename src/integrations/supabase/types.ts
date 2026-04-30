@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           created_at: string
@@ -542,6 +560,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _get_cron_secret: { Args: never; Returns: string }
       adjust_component: {
         Args: { _component_id: string; _delta: number; _note?: string }
         Returns: undefined
