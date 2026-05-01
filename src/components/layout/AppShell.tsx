@@ -29,6 +29,7 @@ export default function AppShell() {
     { to: "/history", label: "Inv. report", icon: BarChart3, show: isAdmin, mobile: false },
     { to: "/work-tracking", label: "Work tracking", icon: LineChart, show: isManager, mobile: false },
     { to: "/ai-reports", label: "AI reports", icon: Sparkles, show: isManager, mobile: false },
+    { to: "/reports-backfill", label: "Backfill reports", icon: Upload, show: isManager, mobile: false },
     { to: "/users", label: "Users", icon: Users, show: isAdmin, mobile: false },
   ];
   const navItems = allNavItems.filter((i) => i.show);
