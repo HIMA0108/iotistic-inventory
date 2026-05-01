@@ -22,6 +22,7 @@ import DailyReportsPage from "./pages/DailyReports";
 import LeavesPage from "./pages/Leaves";
 import WorkTrackingPage from "./pages/WorkTracking";
 import SystemReportsPage from "./pages/SystemReports";
+import ReportBackfillPage from "./pages/ReportBackfill";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +57,7 @@ const App = () => (
               <Route path="/leaves" element={<LeavesPage />} />
               <Route path="/work-tracking" element={<WorkTrackingPage />} />
               <Route path="/ai-reports" element={<SystemReportsPage />} />
+              <Route path="/reports-backfill" element={<ReportBackfillPage />} />
             </Route>
             <Route path="/index" element={<Navigate to="/" replace />} />
             <Route path="*" element={<NotFound />} />
