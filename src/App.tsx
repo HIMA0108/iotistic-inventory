@@ -57,6 +57,7 @@ const App = () => (
               <Route path="/leaves" element={<LeavesPage />} />
               <Route path="/work-tracking" element={<WorkTrackingPage />} />
               <Route path="/ai-reports" element={<SystemReportsPage />} />
+              <Route path="/reports-backfill" element={<ReportBackfillPage />} />
             </Route>
             <Route path="/index" element={<Navigate to="/" replace />} />
             <Route path="*" element={<NotFound />} />
