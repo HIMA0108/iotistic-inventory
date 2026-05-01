@@ -67,6 +67,73 @@ Deno.serve(async (req) => {
     });
   }
 
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+
+  // ---------- Branch: daily reports backfill ----------
+  // Payload: { job_type: "daily_reports_backfill", import_id, company_id,
+  //           reports: [{ user_id, report_date, notes?, tasks: [{task_name, quantity?}] }] }
+  if (body?.job_type === "daily_reports_backfill") {
+    const { import_id, company_id, reports } = body;
+    if (!import_id || !company_id || !Array.isArray(reports)) {
+      return new Response(JSON.stringify({ error: "import_id, company_id, reports[] required" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    let inserted = 0, skipped = 0;
+    const errors: any[] = [];
+
+    for (const r of reports) {
+      try {
+        const { data, error } = await supabase.rpc("import_daily_report_row", {
+          _company_id: company_id,
+          _user_id: r.user_id,
+          _report_date: r.report_date,
+          _notes: r.notes ?? null,
+          _tasks: r.tasks ?? [],
+        });
+        if (error) {
+          errors.push({ user_id: r.user_id, date: r.report_date, error: error.message });
+        } else if (data === "inserted") {
+          inserted++;
+        } else {
+          skipped++;
+        }
+      } catch (e) {
+        errors.push({ user_id: r.user_id, date: r.report_date, error: String(e) });
+      }
+    }
+
+    await supabase.from("report_imports").update({
+      status: errors.length === reports.length ? "failed" : "completed",
+      inserted_count: inserted,
+      skipped_count: skipped,
+      error_message: errors.length ? JSON.stringify(errors).slice(0, 4000) : null,
+      updated_at: new Date().toISOString(),
+    }).eq("id", import_id);
+
+    // Notify managers
+    const { data: mgrs } = await supabase
+      .from("user_roles").select("user_id").eq("company_id", company_id)
+      .in("role", ["manager", "admin"]);
+    const notifs = (mgrs ?? []).map((m: any) => ({
+      company_id,
+      user_id: m.user_id,
+      title: "Daily reports backfill complete",
+      body: `Inserted ${inserted}, skipped ${skipped}${errors.length ? `, ${errors.length} errors` : ""}.`,
+      link: "/reports",
+    }));
+    if (notifs.length > 0) await supabase.from("system_notifications").insert(notifs);
+
+    return new Response(JSON.stringify({ ok: true, inserted, skipped, errors }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // ---------- Default branch: AI system_reports file ready ----------
   const { system_report_id, file_url, status, metadata, title } = body ?? {};
   if (!system_report_id || !file_url) {
     return new Response(JSON.stringify({ error: "system_report_id and file_url required" }), {
@@ -74,11 +141,6 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
 
   const { data: row, error: upErr } = await supabase
     .from("system_reports")
