@@ -22,6 +22,7 @@ import DailyReportsPage from "./pages/DailyReports";
 import LeavesPage from "./pages/Leaves";
 import WorkTrackingPage from "./pages/WorkTracking";
 import SystemReportsPage from "./pages/SystemReports";
+import ReportBackfillPage from "./pages/ReportBackfill";
 
 const queryClient = new QueryClient();
 
