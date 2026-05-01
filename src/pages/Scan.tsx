@@ -180,17 +180,7 @@ export default function ScanPage() {
             <QRScanner onResult={handleResult} onClose={() => setScanning(false)} />
           ) : (
             <div className="space-y-3">
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Input
-                  placeholder="Type or paste SKU"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleManualLookup()}
-                  className="text-base"
-                />
-                <Button variant="secondary" size="lg" onClick={handleManualLookup}>
-                  Look up
-                </Button>
+              <div className="flex justify-end">
                 <Button size="lg" className="gap-2" onClick={() => setScanning(true)}>
                   <ScanLine className="h-5 w-5" /> Scan
                 </Button>
