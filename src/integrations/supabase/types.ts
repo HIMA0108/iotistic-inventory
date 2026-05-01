@@ -379,6 +379,63 @@ export type Database = {
           },
         ]
       }
+      report_imports: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          error_message: string | null
+          id: string
+          inserted_count: number
+          metadata: Json | null
+          name_email_map: Json
+          period_end: string | null
+          period_start: string | null
+          skipped_count: number
+          source_label: string | null
+          source_url: string | null
+          status: Database["public"]["Enums"]["report_import_status"]
+          storage_path: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by: string
+          error_message?: string | null
+          id?: string
+          inserted_count?: number
+          metadata?: Json | null
+          name_email_map?: Json
+          period_end?: string | null
+          period_start?: string | null
+          skipped_count?: number
+          source_label?: string | null
+          source_url?: string | null
+          status?: Database["public"]["Enums"]["report_import_status"]
+          storage_path?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          error_message?: string | null
+          id?: string
+          inserted_count?: number
+          metadata?: Json | null
+          name_email_map?: Json
+          period_end?: string | null
+          period_start?: string | null
+          skipped_count?: number
+          source_label?: string | null
+          source_url?: string | null
+          status?: Database["public"]["Enums"]["report_import_status"]
+          storage_path?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       report_tasks: {
         Row: {
           created_at: string
@@ -595,6 +652,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      import_daily_report_row: {
+        Args: {
+          _company_id: string
+          _notes: string
+          _report_date: string
+          _tasks: Json
+          _user_id: string
+        }
+        Returns: string
+      }
       is_admin_of: {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
@@ -642,6 +709,7 @@ export type Database = {
       leave_type: "annual" | "off_day" | "sick"
       log_action: "in" | "out" | "assemble" | "deliver" | "adjust" | "defective"
       log_item_type: "component" | "device"
+      report_import_status: "pending" | "processing" | "completed" | "failed"
       system_report_status: "pending" | "ready" | "failed"
       system_report_type: "monthly" | "quarterly" | "biannual" | "annual"
     }
@@ -776,6 +844,7 @@ export const Constants = {
       leave_type: ["annual", "off_day", "sick"],
       log_action: ["in", "out", "assemble", "deliver", "adjust", "defective"],
       log_item_type: ["component", "device"],
+      report_import_status: ["pending", "processing", "completed", "failed"],
       system_report_status: ["pending", "ready", "failed"],
       system_report_type: ["monthly", "quarterly", "biannual", "annual"],
     },
